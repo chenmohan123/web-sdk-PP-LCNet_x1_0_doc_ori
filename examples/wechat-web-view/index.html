@@ -4,10 +4,21 @@
   type="file"
   accept="image/*"
 />
+<p id="status">Choose an image.</p>
+<pre id="result"></pre>
 <script type="module">
   import { createDocOrientation } from "https://unpkg.com/web-sdk-pp-lcnet-x1-0-doc-ori/dist/index.js";
-  document.querySelector("#file").onchange = async (e) => {
-    const d = await createDocOrientation({ backend: "wasm" });
-    console.log(await d.detect(e.target.files[0]));
+  let detector;
+  const status = document.querySelector("#status");
+  document.querySelector("#file").onchange = async (event) => {
+    try {
+      detector ??= await createDocOrientation({ backend: "wasm" });
+      status.textContent = "Detecting...";
+      const result = await detector.detect(event.target.files[0]);
+      document.querySelector("#result").textContent = JSON.stringify(result, null, 2);
+      status.textContent = "Detection complete.";
+    } catch (error) {
+      status.textContent = String(error);
+    }
   };
 </script>

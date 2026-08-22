@@ -81,7 +81,7 @@ export interface LoadTimings {
   readonly downloadMs: number;
   readonly sessionMs: number;
   readonly totalMs: number;
-  readonly source: "network" | "cache" | "memory";
+  readonly source: "network" | "cache" | "memory" | "custom";
 }
 
 export interface ProgressEvent {
@@ -96,7 +96,7 @@ export interface DetectOptions {
 
 export interface CreateDocOrientationOptions {
   readonly backend?: Backend;
-  readonly model?: string | ModelManifest;
+  readonly model?: DocOrientationModel;
   readonly cache?: boolean;
   readonly worker?: boolean;
   readonly workerUrl?: string | URL;
@@ -109,6 +109,11 @@ export interface CreateDocOrientationOptions {
   };
   readonly signal?: AbortSignal;
 }
+
+export type DocOrientationModel =
+  | string
+  | ModelManifest
+  | Readonly<{ data: ArrayBuffer; manifest: ModelManifest }>;
 
 export interface Capabilities {
   readonly wasm: boolean;

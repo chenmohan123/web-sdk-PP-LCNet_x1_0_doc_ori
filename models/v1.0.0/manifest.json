@@ -31,7 +31,7 @@
     "bytes": 6788069,
     "opset": 7,
     "sha256": "af9a0a4f317ff0709ce752067807f819cb15d883f8ecad89f28df1c6ee2d9c92",
-    "url": "https://chenmohan123.github.io/web-sdk-PP-LCNet_x1_0_doc_ori/models/v1.0.0/inference.onnx"
+    "url": "inference.onnx"
   },
   "source": {
     "name": "PaddlePaddle/PP-LCNet_x1_0_doc_ori_onnx",

@@ -15,8 +15,10 @@ import {
 } from "./worker/worker-bridge";
 import type {
   Backend,
+  Capabilities,
   CreateDocOrientationOptions,
   DecodableImage,
+  DocOrientationModel,
   DetectOptions,
   DocOrientationDetector,
   DocOrientationModelInfo,
@@ -28,46 +30,102 @@ import type {
   OrientationResult,
 } from "./types";
 
-export const DEFAULT_MANIFEST_URL =
+export const DEFAULT_REMOTE_MANIFEST_URL =
   "https://chenmohan123.github.io/web-sdk-PP-LCNet_x1_0_doc_ori/models/v1.0.0/manifest.json";
+
+function resolvePublishedAsset(relativePath: string): string | undefined {
+  try {
+    if (typeof import.meta.url === "string" && import.meta.url.length > 0)
+      return new URL(relativePath, import.meta.url).href;
+  } catch {
+    // IIFE builds do not provide import.meta.url.
+  }
+  if (typeof document !== "undefined") {
+    const script =
+      (typeof HTMLScriptElement !== "undefined" &&
+      document.currentScript instanceof HTMLScriptElement
+        ? document.currentScript
+        : undefined) ??
+      Array.from(document.scripts).find((entry) =>
+        entry.src.includes("web-sdk-pp-lcnet-x1-0-doc-ori"),
+      );
+    if (script?.src) return new URL(relativePath, script.src).href;
+  }
+  if (typeof globalThis.location === "object" && globalThis.location?.href)
+    return new URL(relativePath, globalThis.location.href).href;
+  return undefined;
+}
+
+export const DEFAULT_MANIFEST_URL =
+  resolvePublishedAsset("./models/v1.0.0/manifest.json") ??
+  DEFAULT_REMOTE_MANIFEST_URL;
+export const DEFAULT_WORKER_URL = resolvePublishedAsset(
+  "./inference.worker.js",
+);
 
 function now(): number {
   return typeof performance === "object" ? performance.now() : Date.now();
 }
 async function loadManifest(
-  model: string | ModelManifest,
+  model: DocOrientationModel,
   signal?: AbortSignal,
-): Promise<ModelManifest> {
-  if (typeof model !== "string") return parseModelManifest(model);
+  onProgress?: (event: { readonly stage: "manifest" }) => void,
+): Promise<{ manifest: ModelManifest; data?: ArrayBuffer }> {
+  onProgress?.({ stage: "manifest" });
+  if (typeof model !== "string") {
+    if ("data" in model)
+      return { data: model.data, manifest: parseModelManifest(model.manifest) };
+    return { manifest: parseModelManifest(model) };
+  }
   try {
-    const response = await fetch(model, signal === undefined ? {} : { signal });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const parsed = parseModelManifest(await response.json());
-    return {
-      ...parsed,
-      variant: {
-        ...parsed.variant,
-        url: new URL(parsed.variant.url, model).href,
-      },
-    };
+    return await fetchManifest(model, signal);
   } catch (error) {
+    let failure: unknown = error;
     if (signal?.aborted)
       throw new DocOrientationError("ABORTED", "Manifest loading was aborted", {
         reason: signal.reason,
       });
-    if (error instanceof DocOrientationError) throw error;
+    if (
+      model === DEFAULT_MANIFEST_URL &&
+      DEFAULT_MANIFEST_URL !== DEFAULT_REMOTE_MANIFEST_URL
+    ) {
+      try {
+        return await fetchManifest(DEFAULT_REMOTE_MANIFEST_URL, signal);
+      } catch (fallbackError) {
+        failure = fallbackError;
+      }
+    }
+    if (failure instanceof DocOrientationError) throw failure;
     throw new DocOrientationError(
       "MODEL_DOWNLOAD_FAILED",
       "Unable to load model manifest",
-      { url: model, cause: String(error) },
+      { url: model, cause: String(failure) },
     );
   }
+}
+
+async function fetchManifest(
+  url: string,
+  signal?: AbortSignal,
+): Promise<{ manifest: ModelManifest }> {
+  const response = await fetch(url, signal === undefined ? {} : { signal });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const parsed = parseModelManifest(await response.json());
+  return {
+    manifest: {
+      ...parsed,
+      variant: {
+        ...parsed.variant,
+        url: new URL(parsed.variant.url, url).href,
+      },
+    },
+  };
 }
 
 class Detector implements DocOrientationDetector {
   private disposed = false;
   constructor(
-    readonly capabilities: ReturnType<typeof probeCapabilities>,
+    readonly capabilities: Capabilities,
     readonly model: DocOrientationModelInfo,
     readonly runtime: DocOrientationRuntimeInfo,
     readonly loadTimings: LoadTimings,
@@ -75,6 +133,9 @@ class Detector implements DocOrientationDetector {
     private readonly manager: ModelManager,
     private readonly session:
       Awaited<ReturnType<typeof createOrtSession>> | InferenceExecutor,
+    private readonly onProgress?: (event: {
+      readonly stage: "inference";
+    }) => void,
   ) {}
   async detect(
     image: DecodableImage,
@@ -92,6 +153,7 @@ class Detector implements DocOrientationDetector {
     const preprocessStarted = now();
     const tensor = preprocessRaster(raster, this.manifest);
     const preprocessMs = now() - preprocessStarted;
+    this.onProgress?.({ stage: "inference" });
     const inference = await this.session.run(
       tensor.data,
       tensor.dims,
@@ -161,6 +223,7 @@ class Detector implements DocOrientationDetector {
       chunk.forEach((entry, index) =>
         data.set(entry.tensor.data, index * entry.tensor.data.length),
       );
+      this.onProgress?.({ stage: "inference" });
       const inference = await this.session.run(
         data,
         [chunk.length, 3, 224, 224],
@@ -244,17 +307,22 @@ export async function createDocOrientation(
 ): Promise<DocOrientationDetector> {
   const started = now();
   const backend: Backend = options.backend ?? "wasm";
-  const capabilities = probeCapabilities();
+  const capabilities = await probeCapabilities();
   assertBackendSupported(backend, capabilities);
   const manifestStarted = now();
-  const manifest = await loadManifest(
+  const resolved = await loadManifest(
     options.model ?? DEFAULT_MANIFEST_URL,
     options.signal,
+    options.onProgress === undefined
+      ? undefined
+      : (event) => options.onProgress?.(event),
   );
+  const manifest = resolved.manifest;
   const manifestMs = now() - manifestStarted;
   const variant = manifest.variant;
   const manager = new ModelManager();
   const loaded = await manager.load(manifest, variant, {
+    ...(resolved.data === undefined ? {} : { data: resolved.data }),
     ...(options.cache === undefined ? {} : { cache: options.cache }),
     ...(options.signal === undefined ? {} : { signal: options.signal }),
     ...(options.onProgress === undefined
@@ -270,24 +338,10 @@ export async function createDocOrientation(
         "Inference workers are unavailable in this environment",
         { worker: true },
       );
-    const currentScriptUrl =
-      typeof HTMLScriptElement !== "undefined" &&
-      document.currentScript instanceof HTMLScriptElement
-        ? document.currentScript.src
-        : undefined;
     const worker = await createWorkerExecutor({
       worker: true,
       createWorker: () =>
-        new Worker(
-          new URL(
-            "./inference.worker.js",
-            options.workerUrl ??
-              currentScriptUrl ??
-              globalThis.location?.href ??
-              "https://localhost/",
-          ),
-          { type: "module" },
-        ),
+        new Worker(resolveWorkerUrl(options.workerUrl), { type: "module" }),
       model: loaded.data.slice(0),
       manifest,
       backend,
@@ -339,5 +393,17 @@ export async function createDocOrientation(
     manifest,
     manager,
     session,
+    options.onProgress === undefined
+      ? undefined
+      : () => options.onProgress?.({ stage: "inference" }),
+  );
+}
+
+function resolveWorkerUrl(value: string | URL | undefined): URL {
+  if (value !== undefined) return new URL(value.toString());
+  if (DEFAULT_WORKER_URL !== undefined) return new URL(DEFAULT_WORKER_URL);
+  return new URL(
+    "./inference.worker.js",
+    globalThis.location?.href ?? "https://localhost/",
   );
 }

@@ -11,8 +11,15 @@ import { verifyModelIntegrity } from "./integrity";
 
 export interface LoadedModel {
   readonly data: ArrayBuffer;
-  readonly source: "network" | "cache" | "memory";
+  readonly source: "network" | "cache" | "memory" | "custom";
   readonly downloadMs: number;
+}
+
+export interface ModelLoadOptions {
+  readonly cache?: boolean;
+  readonly data?: ArrayBuffer;
+  readonly signal?: AbortSignal;
+  readonly onProgress?: (event: ProgressEvent) => void;
 }
 
 export class ModelManager {
@@ -20,18 +27,29 @@ export class ModelManager {
   async load(
     manifest: ModelManifest,
     variant: ModelVariant,
-    options: {
-      readonly cache?: boolean;
-      readonly signal?: AbortSignal;
-      readonly onProgress?: (event: ProgressEvent) => void;
-    } = {},
+    options: ModelLoadOptions = {},
   ): Promise<LoadedModel> {
+    if (options.data !== undefined) {
+      await verifyModelIntegrity(options.data, variant);
+      return { data: options.data, source: "custom", downloadMs: 0 };
+    }
     const key = `${manifest.model.id}/${manifest.model.version}/${variant.id}/${variant.sha256}`;
     if (options.cache !== false) {
-      const cached = await this.cache.get(key);
+      let cached:
+        | Awaited<ReturnType<CacheStorage["get"]>>
+        | undefined;
+      try {
+        cached = await this.cache.get(key);
+      } catch {
+        cached = undefined;
+      }
       if (cached !== undefined) {
-        await verifyModelIntegrity(cached.data, variant);
-        return { data: cached.data, source: "cache", downloadMs: 0 };
+        try {
+          await verifyModelIntegrity(cached.data, variant);
+          return { data: cached.data, source: "cache", downloadMs: 0 };
+        } catch {
+          await this.cache.delete(key).catch(() => undefined);
+        }
       }
     }
     if (options.signal?.aborted)
@@ -82,7 +100,7 @@ export class ModelManager {
       bytes: variant.bytes,
     };
     if (options.cache !== false)
-      await this.cache.put(key, { data: buffer, entry });
+      await this.cache.put(key, { data: buffer, entry }).catch(() => undefined);
     return {
       data: buffer,
       source: "network",

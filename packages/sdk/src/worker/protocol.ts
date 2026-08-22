@@ -1,4 +1,4 @@
-import type { Backend, ModelManifest, NormalizedRaster } from "../types";
+import type { Backend, ModelManifest } from "../types";
 import type { OrtRunResult } from "../runtime/ort-session";
 export type WorkerMessage =
   | {
@@ -9,9 +9,16 @@ export type WorkerMessage =
       readonly backend: Backend;
     }
   | {
-      readonly type: "detect";
+      readonly type: "run";
       readonly requestId: number;
-      readonly raster: NormalizedRaster;
+      readonly data: Float32Array;
+      readonly dims: readonly number[];
+    }
+  | {
+      readonly type: "abort";
+      readonly requestId: number;
+      readonly targetRequestId: number;
+      readonly reason?: unknown;
     }
   | { readonly type: "dispose"; readonly requestId: number };
 export type WorkerResponse =

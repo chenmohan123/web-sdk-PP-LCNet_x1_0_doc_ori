@@ -8,6 +8,7 @@ const scope = globalThis as unknown as {
 };
 
 let session: Awaited<ReturnType<typeof createOrtSession>> | undefined;
+const abortControllers = new Map<number, AbortController>();
 
 scope.onmessage = (event) => {
   void handleMessage(event.data as Record<string, unknown>);
@@ -19,9 +20,10 @@ async function handleMessage(message: Record<string, unknown>): Promise<void> {
   try {
     if (message.type === "init") {
       await session?.dispose();
+      const capabilities = await probeCapabilities();
       session = await createOrtSession({
         backend: message.backend as Backend,
-        capabilities: probeCapabilities(),
+        capabilities,
         manifest: message.manifest as ModelManifest,
         modelBytes: message.model as ArrayBuffer,
       });
@@ -39,10 +41,25 @@ async function handleMessage(message: Record<string, unknown>): Promise<void> {
       const dims = message.dims;
       if (!(data instanceof Float32Array) || !Array.isArray(dims))
         throw new Error("Worker run payload is invalid");
-      const result = await session.run(data, dims as number[]);
-      scope.postMessage({ type: "result", requestId, result }, [
-        result.logits.buffer,
-      ]);
+      const controller = new AbortController();
+      abortControllers.set(requestId, controller);
+      try {
+        const result = await session.run(data, dims as number[], controller.signal);
+        scope.postMessage({ type: "result", requestId, result }, [
+          result.logits.buffer,
+        ]);
+      } finally {
+        abortControllers.delete(requestId);
+      }
+      return;
+    }
+    if (message.type === "abort") {
+      const targetRequestId =
+        typeof message.targetRequestId === "number"
+          ? message.targetRequestId
+          : undefined;
+      if (targetRequestId !== undefined)
+        abortControllers.get(targetRequestId)?.abort(message.reason);
       return;
     }
     if (message.type === "dispose") {

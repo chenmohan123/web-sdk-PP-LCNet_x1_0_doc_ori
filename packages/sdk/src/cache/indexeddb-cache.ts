@@ -72,7 +72,69 @@ export class IndexedDbCache implements CacheStorage {
 }
 
 export function createDefaultCache(): CacheStorage {
-  return typeof indexedDB === "undefined"
-    ? new MemoryCache()
-    : new IndexedDbCache();
+  if (typeof indexedDB === "undefined") return new MemoryCache();
+  try {
+    return new ResilientCache(new IndexedDbCache());
+  } catch {
+    return new MemoryCache();
+  }
+}
+
+class ResilientCache implements CacheStorage {
+  private readonly memory = new MemoryCache();
+
+  constructor(private readonly persistent: CacheStorage) {}
+
+  async get(key: string) {
+    try {
+      const value = await this.persistent.get(key);
+      if (value !== undefined) return value;
+    } catch {
+      // Fall back to memory when persistent storage is unavailable.
+    }
+    return this.memory.get(key);
+  }
+
+  async put(
+    key: string,
+    value: { readonly data: ArrayBuffer; readonly entry: ModelCacheEntry },
+  ) {
+    await this.memory.put(key, value);
+    try {
+      await this.persistent.put(key, value);
+      return;
+    } catch {
+      // The memory copy remains available if persistent storage fails later.
+    }
+  }
+
+  async delete(key: string) {
+    await this.memory.delete(key);
+    try {
+      await this.persistent.delete(key);
+    } catch {
+      // Persistent storage may already be unavailable.
+    }
+  }
+
+  async clear() {
+    await this.memory.clear();
+    try {
+      await this.persistent.clear();
+    } catch {
+      // Persistent storage may already be unavailable.
+    }
+  }
+
+  async list() {
+    const entries = new Map<string, ModelCacheEntry>();
+    for (const entry of await this.memory.list()) entries.set(entry.key, entry);
+    try {
+      for (const entry of await this.persistent.list())
+        entries.set(entry.key, entry);
+    } catch {
+      // Return the memory entries when persistent storage is unavailable.
+    }
+    return [...entries.values()];
+  }
 }

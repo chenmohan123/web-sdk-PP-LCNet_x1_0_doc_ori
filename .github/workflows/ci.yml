@@ -11,6 +11,11 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: node scripts/verify-model.mjs
+      - run: node --test scripts/check-doc-parity.test.mjs scripts/verify-release.mjs
+      - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - run: node scripts/verify-package-assets.mjs
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm --filter @pplcnet/demo test

@@ -17,7 +17,9 @@ test("public API documentation covers provider and EXIF contracts", async () => 
   );
   assert.match(readme, /backend: "wasm"/);
   assert.match(readme, /backend: "webgpu"/);
+  assert.match(readme, /manifest, data/);
   assert.match(api, /detectBatch/);
   assert.match(api, /rotate/);
+  assert.match(api, /loadTimings/);
   assert.match(exif, /Orientation 1-8/);
 });

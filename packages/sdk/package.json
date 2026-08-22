@@ -1,7 +1,14 @@
 {
   "name": "web-sdk-pp-lcnet-x1-0-doc-ori",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Browser-first PP-LCNet document orientation SDK",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenmohan123/web-sdk-PP-LCNet_x1_0_doc_ori.git"
+  },
+  "license": "Apache-2.0",
+  "homepage": "https://chenmohan123.github.io/web-sdk-PP-LCNet_x1_0_doc_ori/",
+  "keywords": ["onnx", "onnxruntime-web", "document", "orientation", "paddlepaddle"],
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -24,7 +31,8 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "tsup --config tsup.config.ts",
+    "build": "tsup --config tsup.config.ts && node ../../scripts/copy-model-to-dist.mjs",
+    "prepack": "pnpm build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src tests"

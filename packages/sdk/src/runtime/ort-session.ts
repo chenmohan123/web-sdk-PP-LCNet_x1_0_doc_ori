@@ -1,6 +1,9 @@
 import { DocOrientationError } from "../errors";
 import type { Backend, Capabilities, ModelManifest } from "../types";
 
+export const DEFAULT_ORT_WASM_BASE_URL =
+  "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0/dist/";
+
 export interface OrtTensorLike {
   readonly data: unknown;
   readonly dims: readonly number[];
@@ -67,8 +70,8 @@ export async function createOrtSession(options: OrtSessionOptions): Promise<{
 }> {
   const ort = options.ort ?? (await defaultOrt(options.backend));
   if (options.backend === "wasm") {
-    if (options.wasm?.paths !== undefined)
-      ort.env.wasm.wasmPaths = options.wasm.paths;
+    ort.env.wasm.wasmPaths =
+      options.wasm?.paths ?? DEFAULT_ORT_WASM_BASE_URL;
     if (options.capabilities.wasmSimd !== undefined)
       ort.env.wasm.simd = options.capabilities.wasmSimd;
     ort.env.wasm.numThreads = options.capabilities.wasmThreads

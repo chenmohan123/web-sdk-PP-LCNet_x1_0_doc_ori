@@ -56,6 +56,11 @@ export async function createWorkerExecutor(options: {
               const abort = (): void => {
                 pending.delete(requestId);
                 fail(new Error("Worker inference was aborted"));
+                worker.postMessage({
+                  type: "abort",
+                  requestId: nextRequestId++,
+                  targetRequestId: requestId,
+                });
               };
               pending.set(requestId, {
                 resolve: done,
@@ -69,6 +74,11 @@ export async function createWorkerExecutor(options: {
             });
           },
           dispose() {
+            for (const [requestId, request] of pending) {
+              pending.delete(requestId);
+              request.cleanup();
+              request.reject(new Error("Worker inference was disposed"));
+            }
             const requestId = nextRequestId++;
             worker.postMessage({ type: "dispose", requestId });
             worker.terminate();
@@ -101,11 +111,16 @@ export async function createWorkerExecutor(options: {
     };
     worker.onerror = (event) => {
       worker.terminate();
-      reject(
+      const error =
         event.error instanceof Error
           ? event.error
-          : new Error(event.message ?? "Worker failed"),
-      );
+          : new Error(event.message ?? "Worker failed");
+      for (const [requestId, request] of pending) {
+        pending.delete(requestId);
+        request.cleanup();
+        request.reject(error);
+      }
+      reject(error);
     };
     worker.postMessage(
       {

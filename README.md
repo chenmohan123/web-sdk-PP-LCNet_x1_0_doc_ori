@@ -28,16 +28,20 @@ To explicitly request the GPU path, pass `backend: "webgpu"`:
 const gpuDetector = await createDocOrientation({ backend: "webgpu" });
 ```
 
-For an optional module Worker, pass `worker: true` and the URL of the published
-`inference.worker.js` asset when your bundler does not colocate it automatically.
+For an optional module Worker, pass `worker: true`. The published Worker is
+resolved automatically; pass `workerUrl` when your bundler emits it elsewhere.
 
-The default manifest is served from GitHub Pages and the model is cached in IndexedDB. Images never leave the browser. Model and ORT assets require HTTPS and CORS; WebGPU requires a secure context and browser WebGPU support.
+The default manifest and ONNX model are bundled with the SDK and cached in
+IndexedDB. If a bundler cannot expose package assets, the SDK falls back to
+the GitHub Pages copy. Images never leave the browser. Model and ORT assets
+require HTTPS and CORS; WebGPU requires a secure context and browser WebGPU
+support.
 
 ## Model and EXIF
 
 The official model input is `[N, 3, 224, 224]` with short-side resize 256, center crop 224, and ImageNet normalization. It returns the four labels `0`, `90`, `180`, and `270`. JPEG Blob/File input is decoded with EXIF auto-rotation disabled and Orientation 1-8 normalized exactly once. Canvas/ImageBitmap inputs are treated as already decoded and oriented.
 
-Custom models must provide a strict manifest describing input/output names and shapes, labels, preprocessing, URL, byte size, and SHA-256. An ONNX URL without a manifest is rejected.
+Custom models must provide a strict manifest describing input/output names and shapes, labels, preprocessing, URL, byte size, and SHA-256. An ONNX URL without a manifest is rejected. Fine-tuned model bytes can also be supplied directly as `{ manifest, data }`, where `data` is an `ArrayBuffer` whose SHA-256 matches the manifest.
 
 ## Browser-global usage
 
