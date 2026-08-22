@@ -1,0 +1,13 @@
+<!doctype html>
+<meta name="viewport" content="width=device-width,initial-scale=1" /><input
+  id="file"
+  type="file"
+  accept="image/*"
+/>
+<script type="module">
+  import { createDocOrientation } from "https://unpkg.com/web-sdk-pp-lcnet-x1-0-doc-ori/dist/index.js";
+  document.querySelector("#file").onchange = async (e) => {
+    const d = await createDocOrientation({ backend: "wasm" });
+    console.log(await d.detect(e.target.files[0]));
+  };
+</script>

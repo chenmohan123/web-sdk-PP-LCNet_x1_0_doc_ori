@@ -21,14 +21,17 @@ const pythonCommands = process.env.PYTHON
     : ["python3", "python"];
 for (const command of pythonCommands) {
   try {
-    const result = await inspect(command, [inspectScript, modelPath], { maxBuffer: 1024 * 1024 });
+    const result = await inspect(command, [inspectScript, modelPath], {
+      maxBuffer: 1024 * 1024,
+    });
     metadata = JSON.parse(result.stdout);
     break;
   } catch (error) {
     inspectError = error;
   }
 }
-if (metadata === undefined) throw new Error(`Unable to inspect ONNX graph: ${String(inspectError)}`);
+if (metadata === undefined)
+  throw new Error(`Unable to inspect ONNX graph: ${String(inspectError)}`);
 
 const manifest = {
   schemaVersion: 1,
@@ -37,7 +40,7 @@ const manifest = {
     version: version.replace(/^v/, ""),
     architecture: "PP-LCNet_x1_0",
     modelType: "doc_img_orientation_classification",
-    parameterCount: metadata.parameterCount
+    parameterCount: metadata.parameterCount,
   },
   input: metadata.input,
   output: metadata.output,
@@ -48,21 +51,21 @@ const manifest = {
     cropSize: 224,
     rescaleFactor: 1 / 255,
     imageMean: [0.485, 0.456, 0.406],
-    imageStd: [0.229, 0.224, 0.225]
+    imageStd: [0.229, 0.224, 0.225],
   },
   variant: {
     id: "official-fp32",
     bytes: data.byteLength,
     opset: metadata.opset,
     sha256,
-    url: `./inference.onnx`
+    url: `https://chenmohan123.github.io/web-sdk-PP-LCNet_x1_0_doc_ori/models/${version}/inference.onnx`,
   },
   source: {
     name: "PaddlePaddle/PP-LCNet_x1_0_doc_ori_onnx",
     url: "https://huggingface.co/PaddlePaddle/PP-LCNet_x1_0_doc_ori_onnx",
     license: "Apache-2.0",
-    files: { model: "inference.onnx" }
-  }
+    files: { model: "inference.onnx" },
+  },
 };
 
 await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);

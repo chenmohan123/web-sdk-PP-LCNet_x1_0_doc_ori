@@ -114,10 +114,13 @@ export interface DocOrientationDetector {
   readonly model: DocOrientationModelInfo;
   readonly runtime: DocOrientationRuntimeInfo;
   readonly loadTimings: LoadTimings;
-  detect(image: DecodableImage, options?: DetectOptions): Promise<OrientationResult>;
+  detect(
+    image: DecodableImage,
+    options?: DetectOptions,
+  ): Promise<OrientationResult>;
   detectBatch(
     images: readonly DecodableImage[],
-    options?: DetectOptions
+    options?: DetectOptions,
   ): Promise<OrientationBatchResult>;
   clearModelCache(): Promise<void>;
   listModelCache(): Promise<readonly ModelCacheEntry[]>;
@@ -125,13 +128,13 @@ export interface DocOrientationDetector {
 }
 
 export function createDocOrientation(
-  options?: CreateDocOrientationOptions
+  options?: CreateDocOrientationOptions,
 ): Promise<DocOrientationDetector>;
 
 export function rotate(
   image: DecodableImage,
   angle: OrientationAngle,
-  options?: { readonly type?: string; readonly quality?: number }
+  options?: { readonly type?: string; readonly quality?: number },
 ): Promise<Blob>;
 ```
 

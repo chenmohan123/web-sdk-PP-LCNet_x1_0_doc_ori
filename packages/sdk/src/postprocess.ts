@@ -9,11 +9,22 @@ export interface OrientationPostprocessResult {
   readonly probabilities: Readonly<Record<string, number>>;
 }
 
-export function postprocessLogits(logits: Float32Array | readonly number[], manifest: ModelManifest, offset = 0): OrientationPostprocessResult {
-  if (logits.length - offset < manifest.labels.length) throw new DocOrientationError("INFERENCE_FAILED", "Model output does not contain four logits");
+export function postprocessLogits(
+  logits: Float32Array | readonly number[],
+  manifest: ModelManifest,
+  offset = 0,
+): OrientationPostprocessResult {
+  if (logits.length - offset < manifest.labels.length)
+    throw new DocOrientationError(
+      "INFERENCE_FAILED",
+      "Model output does not contain four logits",
+    );
   let max = -Infinity;
-  for (let index = 0; index < manifest.labels.length; index += 1) max = Math.max(max, logits[offset + index] ?? -Infinity);
-  const values = manifest.labels.map((_, index) => Math.exp((logits[offset + index] ?? -Infinity) - max));
+  for (let index = 0; index < manifest.labels.length; index += 1)
+    max = Math.max(max, logits[offset + index] ?? -Infinity);
+  const values = manifest.labels.map((_, index) =>
+    Math.exp((logits[offset + index] ?? -Infinity) - max),
+  );
   const denominator = values.reduce((sum, value) => sum + value, 0);
   const probabilities: Record<string, number> = {};
   let bestIndex = 0;
@@ -23,5 +34,11 @@ export function postprocessLogits(logits: Float32Array | readonly number[], mani
     if (probability > values[bestIndex]! / denominator) bestIndex = index;
   }
   const orientation = Number(manifest.labels[bestIndex]) as OrientationAngle;
-  return { orientation, correctionAngle: ((360 - orientation) % 360) as OrientationAngle, label: manifest.labels[bestIndex]!, score: probabilities[manifest.labels[bestIndex]!]!, probabilities };
+  return {
+    orientation,
+    correctionAngle: ((360 - orientation) % 360) as OrientationAngle,
+    label: manifest.labels[bestIndex]!,
+    score: probabilities[manifest.labels[bestIndex]!]!,
+    probabilities,
+  };
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { parseModelManifest } from "../src/model/manifest";
 import { DocOrientationError } from "../src/errors";
 
@@ -37,8 +38,13 @@ const officialManifest = {
   },
 } as const;
 
-function expectInvalid(mutator: (manifest: Record<string, unknown>) => void): void {
-  const candidate = structuredClone(officialManifest) as unknown as Record<string, unknown>;
+function expectInvalid(
+  mutator: (manifest: Record<string, unknown>) => void,
+): void {
+  const candidate = structuredClone(officialManifest) as unknown as Record<
+    string,
+    unknown
+  >;
   mutator(candidate);
   expect(() => parseModelManifest(candidate)).toThrowError(DocOrientationError);
   try {
@@ -49,6 +55,21 @@ function expectInvalid(mutator: (manifest: Record<string, unknown>) => void): vo
 }
 
 describe("parseModelManifest", () => {
+  it("accepts the checked-in official manifest", () => {
+    const manifest: unknown = JSON.parse(
+      readFileSync(
+        new URL("../../../models/v1.0.0/manifest.json", import.meta.url),
+        "utf8",
+      ),
+    );
+    expect(parseModelManifest(manifest).input.shape).toEqual([
+      "batch",
+      3,
+      224,
+      224,
+    ]);
+  });
+
   it("accepts the official singular input/output manifest contract", () => {
     const parsed = parseModelManifest(officialManifest);
     expect(parsed).toEqual(officialManifest);
@@ -71,7 +92,12 @@ describe("parseModelManifest", () => {
 
   it("rejects wrong spatial input dimensions", () => {
     expectInvalid((manifest) => {
-      (manifest.input as Record<string, unknown>).shape = ["batch", 3, 256, 256];
+      (manifest.input as Record<string, unknown>).shape = [
+        "batch",
+        3,
+        256,
+        256,
+      ];
     });
   });
 

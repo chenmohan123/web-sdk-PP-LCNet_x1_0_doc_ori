@@ -1,10 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { DocOrientationError, type DocOrientationErrorCode } from "../src/errors";
+import {
+  DocOrientationError,
+  type DocOrientationErrorCode,
+} from "../src/errors";
 
 describe("DocOrientationError", () => {
   it("exposes a stable code and readonly details", () => {
     const details = { stage: "manifest", field: "sha256" } as const;
-    const error = new DocOrientationError("MANIFEST_INVALID", "Manifest is invalid", details);
+    const error = new DocOrientationError(
+      "MANIFEST_INVALID",
+      "Manifest is invalid",
+      details,
+    );
 
     expect(error).toBeInstanceOf(Error);
     expect(error.name).toBe("DocOrientationError");

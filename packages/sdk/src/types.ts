@@ -2,7 +2,8 @@ import type { DocOrientationErrorCode } from "./errors";
 
 export type OrientationAngle = 0 | 90 | 180 | 270;
 export type Backend = "wasm" | "webgpu";
-export type DecodableImage = Blob | File | ImageBitmap | HTMLCanvasElement | OffscreenCanvas;
+export type DecodableImage =
+  Blob | File | ImageBitmap | HTMLCanvasElement | OffscreenCanvas;
 
 export interface NormalizedRaster {
   readonly data: Uint8ClampedArray;
@@ -36,7 +37,9 @@ export interface ModelManifest {
     readonly modelType: string;
     readonly parameterCount: number;
   };
-  readonly input: ModelTensorSpec & { readonly shape: readonly ["batch", 3, 224, 224] };
+  readonly input: ModelTensorSpec & {
+    readonly shape: readonly ["batch", 3, 224, 224];
+  };
   readonly output: ModelTensorSpec & { readonly shape: readonly ["batch", 4] };
   readonly labels: readonly ["0", "90", "180", "270"];
   readonly maxBatchSize: number;
@@ -96,6 +99,7 @@ export interface CreateDocOrientationOptions {
   readonly model?: string | ModelManifest;
   readonly cache?: boolean;
   readonly worker?: boolean;
+  readonly workerUrl?: string | URL;
   readonly onProgress?: (event: ProgressEvent) => void;
   readonly ort?: {
     readonly wasm?: {
@@ -162,8 +166,14 @@ export interface DocOrientationDetector {
   readonly model: DocOrientationModelInfo;
   readonly runtime: DocOrientationRuntimeInfo;
   readonly loadTimings: LoadTimings;
-  detect(image: DecodableImage, options?: DetectOptions): Promise<OrientationResult>;
-  detectBatch(images: readonly DecodableImage[], options?: DetectOptions): Promise<OrientationBatchResult>;
+  detect(
+    image: DecodableImage,
+    options?: DetectOptions,
+  ): Promise<OrientationResult>;
+  detectBatch(
+    images: readonly DecodableImage[],
+    options?: DetectOptions,
+  ): Promise<OrientationBatchResult>;
   clearModelCache(): Promise<void>;
   listModelCache(): Promise<readonly ModelCacheEntry[]>;
   dispose(): Promise<void>;

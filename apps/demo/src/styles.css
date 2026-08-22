@@ -1,0 +1,163 @@
+:root {
+  font-family: Inter, system-ui, sans-serif;
+  color: #193238;
+  background: #eef3f1;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+main {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 32px clamp(16px, 4vw, 56px) 64px;
+}
+header {
+  border-bottom: 1px solid #bfd0cb;
+  padding-bottom: 24px;
+}
+.eyebrow {
+  color: #cd5d32;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+h1 {
+  max-width: 720px;
+  margin: 10px 0;
+  font-size: clamp(30px, 5vw, 58px);
+  line-height: 1.02;
+  letter-spacing: 0;
+}
+header p:last-child {
+  color: #57706d;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  padding: 20px 0;
+  border-bottom: 1px solid #bfd0cb;
+}
+label {
+  display: grid;
+  gap: 6px;
+  color: #57706d;
+  font-size: 12px;
+  font-weight: 700;
+}
+select,
+input,
+button {
+  min-height: 40px;
+  border: 1px solid #aec2bc;
+  border-radius: 5px;
+  background: white;
+  padding: 0 12px;
+  font: inherit;
+}
+button {
+  background: #193f48;
+  color: white;
+  cursor: pointer;
+  font-weight: 700;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+#status {
+  min-height: 24px;
+  color: #57706d;
+}
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+}
+.preview,
+aside section {
+  border-top: 2px solid #193f48;
+  padding-top: 12px;
+}
+h2 {
+  margin: 0 0 14px;
+  font-size: 16px;
+}
+.images {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+figure {
+  margin: 0;
+}
+figcaption {
+  margin-bottom: 6px;
+  color: #57706d;
+  font-size: 12px;
+}
+img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  background: #d8e3df;
+  border: 1px solid #aec2bc;
+}
+aside {
+  display: grid;
+  align-content: start;
+  gap: 24px;
+}
+dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #d6e0dd;
+  padding-bottom: 7px;
+}
+dt {
+  color: #6c8580;
+  font-size: 12px;
+}
+dd {
+  margin: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+@media (max-width: 820px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  aside {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  main {
+    padding: 22px 14px 42px;
+  }
+  .controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  select,
+  input,
+  button {
+    width: 100%;
+  }
+  .images,
+  aside {
+    grid-template-columns: 1fr;
+  }
+}

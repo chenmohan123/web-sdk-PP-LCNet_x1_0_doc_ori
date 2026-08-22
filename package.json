@@ -3,12 +3,15 @@
   "version": "0.0.0",
   "private": true,
   "packageManager": "pnpm@11.16.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "pnpm -r --if-present build",
     "test": "vitest run",
     "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "pnpm -r --if-present lint"
+    "lint": "pnpm -r --if-present lint",
+    "verify": "node scripts/verify-model.mjs && node --test scripts/check-doc-parity.test.mjs scripts/verify-release.mjs && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

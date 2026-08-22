@@ -1,0 +1,10 @@
+<!doctype html>
+<script src="https://unpkg.com/web-sdk-pp-lcnet-x1-0-doc-ori/dist/browser-global.global.js"></script>
+<script>
+  async function load() {
+    const detector = await PPDocOrientation.createDocOrientation({
+      backend: "wasm",
+    });
+    console.log(detector.runtime);
+  }
+</script>

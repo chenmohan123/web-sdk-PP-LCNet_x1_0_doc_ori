@@ -20,12 +20,15 @@ function fixture(orientation: number, little = true): Uint8Array {
 
 describe("readExifOrientation", () => {
   it("reads all eight little-endian orientation values", () => {
-    for (let orientation = 1; orientation <= 8; orientation += 1) expect(readExifOrientation(fixture(orientation))).toBe(orientation);
+    for (let orientation = 1; orientation <= 8; orientation += 1)
+      expect(readExifOrientation(fixture(orientation))).toBe(orientation);
   });
 
   it("reads big-endian TIFF metadata and defaults malformed data to 1", () => {
     expect(readExifOrientation(fixture(6, false))).toBe(6);
-    expect(readExifOrientation(new Uint8Array([0xff, 0xd8, 0xff, 0xe1, 0, 1]))).toBe(1);
+    expect(
+      readExifOrientation(new Uint8Array([0xff, 0xd8, 0xff, 0xe1, 0, 1])),
+    ).toBe(1);
     expect(readExifOrientation(new Uint8Array([1, 2, 3]))).toBe(1);
   });
 });

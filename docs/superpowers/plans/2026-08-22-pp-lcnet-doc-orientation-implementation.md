@@ -13,6 +13,7 @@
 ### Task 1: Scaffold the independent workspace
 
 **Files:**
+
 - Create: `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`
 - Create: `tsconfig.base.json`, `tsconfig.json`, `vitest.config.ts`, `playwright.config.ts`, `eslint.config.mjs`, `.prettierrc.json`, `.gitignore`, `.nvmrc`
 - Create: `packages/sdk/package.json`, `packages/sdk/tsconfig.json`, `packages/sdk/tsup.config.ts`
@@ -59,6 +60,7 @@ git commit -m "build: scaffold PP-LCNet orientation workspace"
 ### Task 2: Import and verify the official ONNX model
 
 **Files:**
+
 - Create: `models/v1.0.0/inference.onnx`
 - Create: `models/v1.0.0/manifest.json`, `models/v1.0.0/README.md`
 - Create: `scripts/generate-manifest.mjs`, `scripts/verify-model.mjs`, `scripts/model-contract.test.mjs`
@@ -98,6 +100,7 @@ git commit -m "feat: add official PP-LCNet ONNX model manifest"
 ### Task 3: Define public types, errors, and manifest validation
 
 **Files:**
+
 - Create: `packages/sdk/src/types.ts`, `packages/sdk/src/errors.ts`, `packages/sdk/src/model/manifest.ts`
 - Create: `packages/sdk/tests/manifest.test.ts`, `packages/sdk/tests/errors.test.ts`
 - Modify: `packages/sdk/src/index.ts`
@@ -132,6 +135,7 @@ git commit -m "feat: define orientation SDK contracts"
 ### Task 4: Implement EXIF normalization and image rotation
 
 **Files:**
+
 - Create: `packages/sdk/src/image/exif.ts`, `packages/sdk/src/image/decode.ts`, `packages/sdk/src/image/rotate.ts`
 - Create: `packages/sdk/tests/exif.test.ts`, `packages/sdk/tests/image-decode.test.ts`, `packages/sdk/tests/rotate.test.ts`
 - Modify: `packages/sdk/src/index.ts`
@@ -170,6 +174,7 @@ git commit -m "feat: normalize EXIF images and add rotate utility"
 ### Task 5: Implement official preprocessing and postprocessing
 
 **Files:**
+
 - Create: `packages/sdk/src/preprocess.ts`, `packages/sdk/src/postprocess.ts`
 - Create: `packages/sdk/tests/preprocess.test.ts`, `packages/sdk/tests/postprocess.test.ts`
 - Create: `packages/sdk/tests/fixtures/preprocess-reference.json`
@@ -205,6 +210,7 @@ git commit -m "feat: add PP-LCNet preprocessing and orientation postprocess"
 ### Task 6: Add strict ONNX Runtime Web sessions and capability probing
 
 **Files:**
+
 - Create: `packages/sdk/src/runtime/capabilities.ts`, `packages/sdk/src/runtime/ort-session.ts`
 - Create: `packages/sdk/tests/runtime-capabilities.test.ts`, `packages/sdk/tests/ort-session.test.ts`
 - Modify: `packages/sdk/package.json`, `packages/sdk/src/index.ts`
@@ -239,6 +245,7 @@ git commit -m "feat: add strict WASM and WebGPU ORT sessions"
 ### Task 7: Implement model download, integrity, and IndexedDB cache
 
 **Files:**
+
 - Create: `packages/sdk/src/model/download.ts`, `packages/sdk/src/model/integrity.ts`, `packages/sdk/src/model/model-manager.ts`
 - Create: `packages/sdk/src/cache/cache-storage.ts`, `packages/sdk/src/cache/memory-cache.ts`, `packages/sdk/src/cache/indexeddb-cache.ts`
 - Create: `packages/sdk/tests/model-manager.test.ts`, `packages/sdk/tests/integrity.test.ts`, `packages/sdk/tests/cache.test.ts`
@@ -273,6 +280,7 @@ git commit -m "feat: add model integrity and browser cache"
 ### Task 8: Add Worker transport and batch execution
 
 **Files:**
+
 - Create: `packages/sdk/src/worker/protocol.ts`, `packages/sdk/src/worker/inference.worker.ts`, `packages/sdk/src/worker/worker-bridge.ts`
 - Create: `packages/sdk/tests/worker-bridge.test.ts`, `packages/sdk/tests/batch.test.ts`
 
@@ -306,6 +314,7 @@ git commit -m "feat: add worker transport and batched inference"
 ### Task 9: Implement the detector factory and public lifecycle
 
 **Files:**
+
 - Create: `packages/sdk/src/detector.ts`
 - Create: `packages/sdk/tests/detector.test.ts`, `packages/sdk/tests/package-smoke.test.ts`
 - Modify: `packages/sdk/src/index.ts`
@@ -340,6 +349,7 @@ git commit -m "feat: expose document orientation detector API"
 ### Task 10: Build the SDK and add package-level integration checks
 
 **Files:**
+
 - Modify: `packages/sdk/tsup.config.ts`, `packages/sdk/package.json`, `packages/sdk/api-extractor.json`
 - Create: `packages/sdk/tests/build-smoke.test.ts`, `packages/sdk/README.md`
 
@@ -373,6 +383,7 @@ git commit -m "build: publish ESM and browser-global SDK bundles"
 ### Task 11: Implement the responsive demo
 
 **Files:**
+
 - Create: `apps/demo/src/main.tsx`, `apps/demo/src/App.tsx`, `apps/demo/src/styles.css`, `apps/demo/src/types.ts`
 - Create: `apps/demo/public/samples/upright.jpg`, `apps/demo/public/samples/rotated.jpg`
 - Create: `apps/demo/tests/demo.spec.ts`
@@ -407,6 +418,7 @@ git commit -m "feat: add orientation detection demo"
 ### Task 12: Write user documentation and examples
 
 **Files:**
+
 - Create: `README.md`, `README.en.md`, `docs/zh-CN/quick-start.md`, `docs/zh-CN/api.md`, `docs/zh-CN/models.md`, `docs/zh-CN/custom-models.md`, `docs/zh-CN/exif.md`, `docs/zh-CN/compatibility.md`, `docs/zh-CN/performance.md`, `docs/zh-CN/troubleshooting.md`
 - Create: `docs/en/quick-start.md`, `docs/en/api.md`, `examples/cdn/index.html`, `examples/vite/main.ts`, `examples/wechat-web-view/index.html`
 - Create: `LICENSE`, `THIRD_PARTY_NOTICES.md`, `CHANGELOG.md`
@@ -442,6 +454,7 @@ git commit -m "docs: document orientation SDK and integrations"
 ### Task 13: Add CI, GitHub Pages, and npm release workflows
 
 **Files:**
+
 - Create: `.github/workflows/ci.yml`, `.github/workflows/pages.yml`, `.github/workflows/release.yml`
 - Create: `.github/dependabot.yml`, `.github/ISSUE_TEMPLATE/bug_report.yml`, `.github/ISSUE_TEMPLATE/feature_request.yml`
 - Modify: `package.json`, `scripts/verify-release.mjs`
@@ -476,6 +489,7 @@ git commit -m "ci: add verification, Pages, and npm release workflows"
 ### Task 14: Run the full verification gate and prepare the public repository
 
 **Files:**
+
 - Modify only files required by verification failures.
 
 - [ ] **Step 1: Run the complete verification command**
