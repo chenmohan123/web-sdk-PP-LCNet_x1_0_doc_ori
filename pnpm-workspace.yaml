@@ -4,3 +4,6 @@ packages:
 allowBuilds:
   esbuild: true
   protobufjs: true
+# tsup's transitive esbuild must stay on the patched Windows dev-server release.
+overrides:
+  esbuild: 0.28.2
