@@ -1,0 +1,46 @@
+[
+  {
+    "id": "orientation-0",
+    "filename": "orientation-0.jpg",
+    "expectedOrientation": 0,
+    "label": { "zh": "正向文档", "en": "Upright document" },
+    "kind": "derived",
+    "mimeType": "image/jpeg",
+    "sourceUrl": "https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/img_rot180_demo.jpg",
+    "sourceCommit": "2661c7c0ef5c613e8f93c6e93b2e052399f0f854",
+    "sha256": "caaef3106dd5a0c73e180f7bd0ab0e22b238107ccc8446eb786f1fdf4abb837e"
+  },
+  {
+    "id": "orientation-90",
+    "filename": "orientation-90.jpg",
+    "expectedOrientation": 90,
+    "label": { "zh": "顺时针 90°", "en": "Clockwise 90°" },
+    "kind": "derived",
+    "mimeType": "image/jpeg",
+    "sourceUrl": "https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/img_rot180_demo.jpg",
+    "sourceCommit": "2661c7c0ef5c613e8f93c6e93b2e052399f0f854",
+    "sha256": "95823bab55ab389dc9bca97af5f3c9b929b425ade507d968b93173d35e81c013"
+  },
+  {
+    "id": "orientation-180",
+    "filename": "orientation-180.jpg",
+    "expectedOrientation": 180,
+    "label": { "zh": "官方倒置样例", "en": "Official upside-down sample" },
+    "kind": "official",
+    "mimeType": "image/jpeg",
+    "sourceUrl": "https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/img_rot180_demo.jpg",
+    "sourceCommit": "2661c7c0ef5c613e8f93c6e93b2e052399f0f854",
+    "sha256": "c5a77e031470e13878ff4f28a06ca843fd455d95c20b1b49b486681e346209ed"
+  },
+  {
+    "id": "orientation-270",
+    "filename": "orientation-270.jpg",
+    "expectedOrientation": 270,
+    "label": { "zh": "逆时针 90°", "en": "Counter-clockwise 90°" },
+    "kind": "derived",
+    "mimeType": "image/jpeg",
+    "sourceUrl": "https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/img_rot180_demo.jpg",
+    "sourceCommit": "2661c7c0ef5c613e8f93c6e93b2e052399f0f854",
+    "sha256": "69200073784ce5d78d8686203cbfd1e2918421256a289e51253ef4e495bfdd36"
+  }
+]

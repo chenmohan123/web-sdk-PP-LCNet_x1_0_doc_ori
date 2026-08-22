@@ -12,7 +12,15 @@ export interface DemoCopy {
   readonly webgpuGpu: string;
   readonly chooseImage: string;
   readonly run: string;
+  readonly samples: string;
+  readonly samplesDescription: string;
+  readonly officialSample: string;
+  readonly derivedSample: string;
+  readonly expectedOrientation: string;
+  readonly sampleSource: string;
   readonly selectedFile: string;
+  readonly statusSampleLoading: string;
+  readonly statusSampleReady: string;
   readonly statusChoose: string;
   readonly statusReady: string;
   readonly statusLoading: string;

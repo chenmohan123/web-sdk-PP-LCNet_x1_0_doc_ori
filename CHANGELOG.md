@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added four offline Demo orientation samples covering 0°, 90°, 180°, and 270°, using the official PaddleOCR 180° input plus clearly labeled derived rotations.
+
 ## 0.1.2 - 2026-08-22
 
 - Published the Chinese-first bilingual npm README with online Demo, GitHub, English, EXIF, custom model, Worker, React, CDN, Vite, and WeChat links.

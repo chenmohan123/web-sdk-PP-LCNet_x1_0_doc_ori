@@ -45,6 +45,43 @@ test("uses a clean empty preview and one image action", async ({ page }) => {
   await expect(page.getByTestId("corrected-empty")).toBeVisible();
 });
 
+test("shows four orientation samples and loads a sample into the original preview", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const samples = page.locator("[data-sample-id]");
+  await expect(samples).toHaveCount(4);
+  await expect(page.getByRole("button", { name: /官方倒置样例/ })).toBeVisible();
+  await page.getByRole("button", { name: /官方倒置样例/ }).click();
+  await expect(page.getByRole("button", { name: "加载模型并检测" })).toBeEnabled();
+  await expect(page.locator("#original-preview img")).toHaveAttribute(
+    "src",
+    /blob:/,
+  );
+  await expect(page.getByText(/orientation-180\.jpg/)).toBeVisible();
+  await expect(page.locator("#sample-attribution")).toHaveAttribute(
+    "href",
+    "https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/img_rot180_demo.jpg",
+  );
+  await page.getByRole("button", { name: "English" }).click();
+  await expect(page.getByRole("heading", { name: "Sample images" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Official upside-down sample/ }),
+  ).toBeVisible();
+});
+
+test("keeps orientation samples inside the viewport on mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await expect(page.locator("[data-sample-id]")).toHaveCount(4);
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth,
+  );
+  expect(overflow).toBe(false);
+});
+
 test("demo separates model load timings from inference timings", async ({
   page,
 }) => {

@@ -23,6 +23,10 @@ test("public API documentation covers provider and EXIF contracts", async () => 
     new URL("../README.en.md", import.meta.url),
     "utf8",
   );
+  const notices = await readFile(
+    new URL("../THIRD_PARTY_NOTICES.md", import.meta.url),
+    "utf8",
+  );
   assert.match(readme, /backend: "wasm"/);
   assert.match(readme, /backend: "webgpu"/);
   assert.match(readme, /manifest, data/);
@@ -40,6 +44,10 @@ test("public API documentation covers provider and EXIF contracts", async () => 
   );
   assert.match(packageReadme, /在线 Demo/);
   assert.match(packageReadme, /## English/);
+  assert.match(readme, /示例图片/);
+  assert.match(englishReadme, /Sample images/i);
+  assert.match(notices, /img_rot180_demo\.jpg/);
+  assert.match(notices, /Apache License 2\.0/);
   assert.match(api, /detectBatch/);
   assert.match(api, /rotate/);
   assert.match(api, /loadTimings/);

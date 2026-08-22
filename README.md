@@ -52,6 +52,10 @@ const gpuDetector = await createDocOrientation({ backend: "webgpu" });
 - [自定义模型](docs/zh-CN/custom-models.md) · [兼容性](docs/zh-CN/compatibility.md) · [性能](docs/zh-CN/performance.md) · [故障排查](docs/zh-CN/troubleshooting.md)
 - [CDN 示例](examples/cdn/README.md) · [Vite 示例](examples/vite/README.md) · [React 示例](examples/react/README.md) · [微信 web-view 示例](examples/wechat-web-view/README.md)
 
+## Demo 示例图片
+
+在线 Demo 的“示例图片”区域提供 0°、90°、180°、270° 四个方向样例。180° 图片是 PaddleOCR 官方 `img_rot180_demo.jpg`；其余三张是从官方原图生成的派生旋转图，并在 Demo 中明确标注。来源、固定 commit 和 SHA-256 见 [第三方声明](THIRD_PARTY_NOTICES.md)。
+
 浏览器全局构建：
 
 ```html
