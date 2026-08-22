@@ -12,13 +12,9 @@ jobs:
         with: { version: 11.16.0 }
       - uses: actions/setup-node@v4
         with:
-          {
-            node-version: 22,
-            cache: pnpm,
-            registry-url: https://registry.npmjs.org,
-          }
+          { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: node scripts/verify-model.mjs
       - run: pnpm typecheck && pnpm test && pnpm build
-      - run: pnpm --filter web-sdk-pp-lcnet-x1-0-doc-ori publish --no-git-checks
-        env: { NODE_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}" }
+      - run: npm publish --provenance --access public --no-git-checks
+        working-directory: packages/sdk
