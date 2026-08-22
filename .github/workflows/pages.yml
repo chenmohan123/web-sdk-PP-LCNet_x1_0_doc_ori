@@ -13,6 +13,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web-sdk-pp-lcnet-x1-0-doc-ori build
       - run: pnpm --filter @pplcnet/demo build
       - run: mkdir -p site/models && cp -R models/v1.0.0 site/models/v1.0.0 && cp -R apps/demo/dist/* site/
       - uses: actions/upload-pages-artifact@v3
