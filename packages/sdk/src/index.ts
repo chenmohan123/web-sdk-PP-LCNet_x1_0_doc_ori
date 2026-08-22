@@ -10,3 +10,5 @@ export { readExifOrientation } from "./image/exif";
 export { rotate } from "./image/rotate";
 export { preprocessRaster } from "./preprocess";
 export { postprocessLogits } from "./postprocess";
+export { probeCapabilities } from "./runtime/capabilities";
+export { createOrtSession } from "./runtime/ort-session";
