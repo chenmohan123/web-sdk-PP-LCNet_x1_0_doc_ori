@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
 import { resolve } from "node:path";
+import { promisify } from "node:util";
 
 const root = resolve(import.meta.dirname, "..");
 const version = process.argv[2] ?? "v1.0.0";
@@ -8,6 +10,20 @@ const modelPath = resolve(root, "models", version, "inference.onnx");
 const manifestPath = resolve(root, "models", version, "manifest.json");
 const data = await readFile(modelPath);
 const sha256 = createHash("sha256").update(data).digest("hex");
+const inspect = promisify(execFile);
+const inspectScript = resolve(root, "scripts", "inspect-onnx.py");
+let metadata;
+let inspectError;
+for (const command of process.platform === "win32" ? ["python", "py"] : ["python3", "python"]) {
+  try {
+    const result = await inspect(command, [inspectScript, modelPath], { maxBuffer: 1024 * 1024 });
+    metadata = JSON.parse(result.stdout);
+    break;
+  } catch (error) {
+    inspectError = error;
+  }
+}
+if (metadata === undefined) throw new Error(`Unable to inspect ONNX graph: ${String(inspectError)}`);
 
 const manifest = {
   schemaVersion: 1,
@@ -16,10 +32,10 @@ const manifest = {
     version: version.replace(/^v/, ""),
     architecture: "PP-LCNet_x1_0",
     modelType: "doc_img_orientation_classification",
-    parameterCount: 1687613
+    parameterCount: metadata.parameterCount
   },
-  input: { name: "x", dtype: "float32", shape: ["batch", 3, 224, 224] },
-  output: { name: "fetch_name_0", dtype: "float32", shape: ["batch", 4] },
+  input: metadata.input,
+  output: metadata.output,
   labels: ["0", "90", "180", "270"],
   maxBatchSize: 8,
   preprocessing: {
@@ -32,7 +48,7 @@ const manifest = {
   variant: {
     id: "official-fp32",
     bytes: data.byteLength,
-    opset: 7,
+    opset: metadata.opset,
     sha256,
     url: `./inference.onnx`
   },
