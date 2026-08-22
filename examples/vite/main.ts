@@ -1,7 +1,13 @@
-import { createDocOrientation } from "web-sdk-pp-lcnet-x1-0-doc-ori";
+import {
+  createDocOrientation,
+  type Backend,
+} from "web-sdk-pp-lcnet-x1-0-doc-ori";
 
-export async function detectSelectedFile(file: File) {
-  const detector = await createDocOrientation({ backend: "wasm" });
+export async function detectSelectedFile(
+  file: File,
+  backend: Backend = "wasm",
+) {
+  const detector = await createDocOrientation({ backend });
   try {
     return await detector.detect(file);
   } finally {
