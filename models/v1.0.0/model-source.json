@@ -1,0 +1,7 @@
+{
+  "repository": "PaddlePaddle/PP-LCNet_x1_0_doc_ori_onnx",
+  "url": "https://huggingface.co/PaddlePaddle/PP-LCNet_x1_0_doc_ori_onnx",
+  "file": "inference.onnx",
+  "license": "Apache-2.0",
+  "upstreamRevision": "7330ab7039123e46af2dc03154b9969aa412c61d"
+}
