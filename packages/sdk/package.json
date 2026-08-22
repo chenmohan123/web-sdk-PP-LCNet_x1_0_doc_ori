@@ -1,0 +1,14 @@
+{
+  "name": "web-sdk-pp-lcnet-x1-0-doc-ori",
+  "version": "0.1.0",
+  "description": "Browser-first PP-LCNet document orientation SDK",
+  "type": "module",
+  "sideEffects": false,
+  "files": ["dist"],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js", "default": "./dist/index.js" } },
+  "scripts": { "build": "tsup --config tsup.config.ts", "test": "vitest run", "typecheck": "tsc --noEmit", "lint": "eslint src tests" },
+  "engines": { "node": ">=22" }
+}
