@@ -1,6 +1,4 @@
-export function createDocOrientation(): never {
-  throw new Error("not implemented");
-}
+export { createDocOrientation, DEFAULT_MANIFEST_URL } from "./detector";
 
 export * from "./errors";
 export * from "./types";
