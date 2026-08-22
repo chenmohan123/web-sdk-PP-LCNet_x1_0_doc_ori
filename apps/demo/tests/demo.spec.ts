@@ -3,12 +3,38 @@ import { test, expect } from "playwright/test";
 const pixelPng =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 
-test("demo exposes backend, image and result controls", async ({ page }) => {
+test("demo starts in Chinese with backend, image and result controls", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("h1")).toContainText("PP-LCNet");
+  await expect(page.getByRole("button", { name: "选择图片" })).toBeVisible();
   await expect(page.locator("#backend")).toHaveValue("wasm");
-  await expect(page.locator("#file")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Model" })).toBeVisible();
+  await expect(page.locator("#file")).toBeHidden();
+  await expect(page.getByRole("heading", { name: "模型" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "耗时" })).toBeVisible();
+});
+
+test("starts in Chinese and resets to Chinese after reload", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "选择图片" })).toBeVisible();
+  await page.getByRole("button", { name: "English" }).click();
+  await expect(page.getByRole("button", { name: "Choose image" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "选择图片" })).toBeVisible();
+  await expect(page.getByText("SDK v0.1.1")).toBeVisible();
+});
+
+test("uses a clean empty preview and one image action", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "GitHub" })).toHaveAttribute(
+    "href",
+    "https://github.com/chenmohan123/web-sdk-PP-LCNet_x1_0_doc_ori",
+  );
+  await expect(page.locator("[data-testid=sdk-version]")).toHaveText("SDK v0.1.1");
+  await expect(page.locator("#file")).toBeHidden();
+  await expect(page.getByRole("button", { name: "选择图片" })).toBeVisible();
+  await expect(page.locator('img[src=""]')).toHaveCount(0);
+  await expect(page.getByTestId("original-empty")).toBeVisible();
+  await expect(page.getByTestId("corrected-empty")).toBeVisible();
 });
 
 test("demo separates model load timings from inference timings", async ({ page }) => {
@@ -18,11 +44,19 @@ test("demo separates model load timings from inference timings", async ({ page }
     mimeType: "image/png",
     buffer: Buffer.from(pixelPng, "base64"),
   });
-  await page.getByRole("button", { name: "Load model and detect" }).click();
-  await expect(page.getByRole("status")).toContainText("Detection complete", {
+  await page.getByRole("button", { name: "加载模型并检测" }).click();
+  await expect(page.getByRole("status")).toContainText("检测完成", {
     timeout: 30_000,
   });
-  await expect(page.locator("#timing")).toContainText("Manifest");
-  await expect(page.locator("#timing")).toContainText("Load total");
-  await expect(page.locator("#timing")).toContainText("Total");
+  await expect(page.locator("#timing")).toContainText("模型清单");
+  await expect(page.locator("#timing")).toContainText("加载总计");
+  await expect(page.locator("#timing")).toContainText("推理总计");
+});
+
+test("keeps the layout inside the viewport", async ({ page }) => {
+  await page.goto("/");
+  const overflow = await page.evaluate(() =>
+    document.documentElement.scrollWidth > window.innerWidth,
+  );
+  expect(overflow).toBe(false);
 });

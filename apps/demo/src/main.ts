@@ -5,27 +5,186 @@ import {
   type Backend,
   type OrientationResult,
 } from "web-sdk-pp-lcnet-x1-0-doc-ori";
-import { formatLoadTimings } from "./timing";
+import { createCopy, type DemoCopy, type Language } from "./i18n";
+import { renderShell } from "./render";
 import "./styles.css";
+
 const app = document.querySelector<HTMLDivElement>("#app")!;
-app.innerHTML = `<main><header><p class="eyebrow">ONNX RUNTIME WEB</p><h1>PP-LCNet document orientation</h1><p>Local browser inference for 0°, 90°, 180° and 270° document images.</p></header><section class="controls"><label>Backend <select id="backend"><option value="wasm">WASM / CPU</option><option value="webgpu">WebGPU / GPU</option></select></label><input id="file" type="file" accept="image/*"><button id="run" disabled>Load model and detect</button></section><p id="status" role="status">Choose an image to begin.</p><section class="grid"><div class="preview"><h2>Preview</h2><div class="images"><figure><figcaption>Original</figcaption><img id="original" alt="Original image"></figure><figure><figcaption>Corrected</figcaption><img id="corrected" alt="Corrected image"></figure></div></div><aside><section><h2>Result</h2><dl id="result"><div><dt>Orientation</dt><dd>-</dd></div><div><dt>Confidence</dt><dd>-</dd></div></dl></section><section><h2>Model</h2><dl id="model"></dl></section><section><h2>Timing</h2><dl id="timing"></dl></section></aside></section></main>`;
+let language: Language = "zh-CN";
+let copy: DemoCopy = createCopy(language);
+let selected: File | undefined;
+let detector: Awaited<ReturnType<typeof createDocOrientation>> | undefined;
+let result: OrientationResult | undefined;
+let originalUrl: string | undefined;
+let correctedUrl: string | undefined;
+let statusKey: "choose" | "ready" | "loading" | "complete" = "choose";
+
+app.innerHTML = renderShell(copy, __SDK_VERSION__);
 const fileInput = document.querySelector<HTMLInputElement>("#file")!;
+const chooseButton = document.querySelector<HTMLButtonElement>("#choose-image")!;
 const backendInput = document.querySelector<HTMLSelectElement>("#backend")!;
 const runButton = document.querySelector<HTMLButtonElement>("#run")!;
 const status = document.querySelector<HTMLParagraphElement>("#status")!;
-let selected: File | undefined;
-let detector: Awaited<ReturnType<typeof createDocOrientation>> | undefined;
-let originalUrl: string | undefined;
-let correctedUrl: string | undefined;
+const selectedFile = document.querySelector<HTMLParagraphElement>("#selected-file")!;
+
+function rows(values: Record<string, string>): string {
+  return Object.entries(values)
+    .map(([key, value]) => `<div><dt>${key}</dt><dd>${value}</dd></div>`)
+    .join("");
+}
+
+function statusText(): string {
+  switch (statusKey) {
+    case "ready":
+      return copy.statusReady;
+    case "loading":
+      return copy.statusLoading;
+    case "complete":
+      return copy.statusComplete;
+    default:
+      return copy.statusChoose;
+  }
+}
+
+function setStatus(next: typeof statusKey): void {
+  statusKey = next;
+  status.textContent = statusText();
+}
+
+function renderEmptyPreviews(): void {
+  if (originalUrl) setPreview("original", originalUrl);
+  else
+    document.querySelector("#original-preview")!.innerHTML =
+      `<div data-testid="original-empty" class="empty-state">${copy.emptyOriginal}</div>`;
+  if (correctedUrl) setPreview("corrected", correctedUrl);
+  else
+    document.querySelector("#corrected-preview")!.innerHTML =
+      `<div data-testid="corrected-empty" class="empty-state">${copy.emptyCorrected}</div>`;
+}
+
+function renderSelectedFile(): void {
+  selectedFile.textContent = selected
+    ? `${copy.selectedFile}: ${selected.name} (${selected.type || "image"}, ${selected.size.toLocaleString()} B)`
+    : "";
+}
+
+function renderResult(
+  nextResult: OrientationResult,
+  loadTimings: Awaited<ReturnType<typeof createDocOrientation>>["loadTimings"],
+): void {
+  document.querySelector("#result")!.innerHTML = rows({
+    [copy.orientation]: `${nextResult.orientation}°`,
+    [copy.confidence]: `${(nextResult.score * 100).toFixed(2)}%`,
+    [copy.correction]: `${nextResult.correctionAngle}°`,
+  });
+  document.querySelector("#model")!.innerHTML = rows({
+    [copy.name]: nextResult.model.id,
+    [copy.version]: nextResult.model.version,
+    [copy.size]: `${(nextResult.model.bytes / 1024 / 1024).toFixed(2)} MB`,
+    [copy.parameters]: nextResult.model.parameterCount.toLocaleString(),
+    [copy.backend]: nextResult.runtime.backend,
+  });
+  document.querySelector("#timing")!.innerHTML = rows({
+    [copy.manifest]: `${loadTimings.manifestMs.toFixed(1)} ms`,
+    [copy.modelLoad]: `${loadTimings.downloadMs.toFixed(1)} ms`,
+    [copy.session]: `${loadTimings.sessionMs.toFixed(1)} ms`,
+    [copy.loadTotal]: `${loadTimings.totalMs.toFixed(1)} ms`,
+    [copy.source]: loadTimings.source,
+    [copy.total]: `${nextResult.timings.totalMs.toFixed(1)} ms`,
+    [copy.decode]: `${nextResult.timings.decodeMs.toFixed(1)} ms`,
+    [copy.preprocess]: `${nextResult.timings.preprocessMs.toFixed(1)} ms`,
+    [copy.inference]: `${nextResult.timings.inferenceMs.toFixed(1)} ms`,
+    [copy.postprocess]: `${nextResult.timings.postprocessMs.toFixed(1)} ms`,
+  });
+}
+
+function renderPlaceholders(): void {
+  document.querySelector("#result")!.innerHTML = rows({
+    [copy.orientation]: "-",
+    [copy.confidence]: "-",
+    [copy.correction]: "-",
+  });
+  document.querySelector("#model")!.innerHTML = rows({
+    [copy.name]: "-",
+    [copy.version]: "-",
+    [copy.size]: "-",
+    [copy.parameters]: "-",
+    [copy.backend]: "-",
+  });
+  document.querySelector("#timing")!.innerHTML = "";
+}
+
+function applyCopy(): void {
+  document.querySelector("#eyebrow")!.textContent = copy.eyebrow;
+  document.querySelector("#title")!.textContent = copy.title;
+  document.querySelector("#description")!.textContent = copy.description;
+  document.querySelector("#backend-label")!.textContent = copy.backend;
+  document.querySelector<HTMLButtonElement>("#choose-image")!.textContent = copy.chooseImage;
+  document.querySelector<HTMLButtonElement>("#run")!.textContent = copy.run;
+  document.querySelector("#preview-heading")!.textContent = copy.preview;
+  document.querySelector("#original-label")!.textContent = copy.original;
+  document.querySelector("#corrected-label")!.textContent = copy.corrected;
+  document.querySelector("#result-heading")!.textContent = copy.result;
+  document.querySelector("#model-heading")!.textContent = copy.model;
+  document.querySelector("#timing-heading")!.textContent = copy.timing;
+  document.querySelector<HTMLAnchorElement>(".repository-link")!.textContent = copy.github;
+  document.querySelector<HTMLButtonElement>("#language-zh")!.textContent = copy.chinese;
+  document.querySelector<HTMLButtonElement>("#language-en")!.textContent = copy.english;
+  const options = backendInput.options;
+  options[0]!.textContent = copy.wasmCpu;
+  options[1]!.textContent = copy.webgpuGpu;
+  renderSelectedFile();
+  renderEmptyPreviews();
+  if (result && detector) renderResult(result, detector.loadTimings);
+  else renderPlaceholders();
+  status.textContent = statusText();
+}
+
+function setPreview(kind: "original" | "corrected", url: string): void {
+  const preview = document.querySelector(`#${kind}-preview`)!;
+  const label = kind === "original" ? copy.original : copy.corrected;
+  preview.innerHTML = `<img src="${url}" alt="${label}" />`;
+}
+
+chooseButton.addEventListener("click", () => fileInput.click());
+document.querySelector<HTMLButtonElement>("#language-zh")!.addEventListener("click", () => {
+  language = "zh-CN";
+  copy = createCopy(language);
+  applyCopy();
+});
+document.querySelector<HTMLButtonElement>("#language-en")!.addEventListener("click", () => {
+  language = "en";
+  copy = createCopy(language);
+  applyCopy();
+});
 fileInput.addEventListener("change", () => {
   selected = fileInput.files?.[0];
+  result = undefined;
   runButton.disabled = selected === undefined;
+  if (originalUrl !== undefined) URL.revokeObjectURL(originalUrl);
+  if (correctedUrl !== undefined) URL.revokeObjectURL(correctedUrl);
+  originalUrl = undefined;
+  correctedUrl = undefined;
+  renderPlaceholders();
+  renderEmptyPreviews();
   if (selected) {
-    if (originalUrl !== undefined) URL.revokeObjectURL(originalUrl);
     originalUrl = URL.createObjectURL(selected);
-    document.querySelector<HTMLImageElement>("#original")!.src = originalUrl;
-    status.textContent = "Ready to detect.";
+    setPreview("original", originalUrl);
+    setStatus("ready");
+  } else {
+    renderSelectedFile();
+    setStatus("choose");
   }
+  renderSelectedFile();
+});
+backendInput.addEventListener("change", () => {
+  void detector?.dispose();
+  detector = undefined;
+  result = undefined;
+  renderPlaceholders();
+  if (correctedUrl !== undefined) URL.revokeObjectURL(correctedUrl);
+  correctedUrl = undefined;
+  renderEmptyPreviews();
 });
 runButton.addEventListener("click", () => {
   void runDetection();
@@ -37,62 +196,40 @@ async function runDetection(): Promise<void> {
   try {
     await detector?.dispose();
     const backend = backendInput.value as Backend;
-    status.textContent = `Loading ${backend} model...`;
+    setStatus("loading");
     detector = await createDocOrientation({
       backend,
       onProgress: (event) => {
-        status.textContent = `${event.stage}...`;
+        status.textContent = copy.statusStage[event.stage] ?? copy.statusLoading;
       },
     });
-    const result = await detector.detect(selected);
-    render(result, detector.loadTimings);
+    result = await detector.detect(selected);
+    renderResult(result, detector.loadTimings);
     const corrected = await rotate(selected, result.correctionAngle);
     if (correctedUrl !== undefined) URL.revokeObjectURL(correctedUrl);
     correctedUrl = URL.createObjectURL(corrected);
-    document.querySelector<HTMLImageElement>("#corrected")!.src = correctedUrl;
-    status.textContent = "Detection complete.";
+    setPreview("corrected", correctedUrl);
+    setStatus("complete");
   } catch (error) {
     status.textContent =
       error instanceof DocOrientationError
-        ? `${error.code}: ${error.message}${
+        ? `${copy.error}: ${error.code}: ${error.message}${
             Object.keys(error.details).length > 0
               ? ` (${JSON.stringify(error.details)})`
               : ""
           }`
         : error instanceof Error
-          ? error.message
-          : String(error);
+          ? `${copy.error}: ${error.message}`
+          : `${copy.error}: ${String(error)}`;
   } finally {
     runButton.disabled = false;
   }
 }
-function rows(values: Record<string, string>): string {
-  return Object.entries(values)
-    .map(([key, value]) => `<div><dt>${key}</dt><dd>${value}</dd></div>`)
-    .join("");
-}
-function render(
-  result: OrientationResult,
-  loadTimings: Awaited<ReturnType<typeof createDocOrientation>>["loadTimings"],
-): void {
-  document.querySelector("#result")!.innerHTML = rows({
-    Orientation: `${result.orientation}°`,
-    Confidence: `${(result.score * 100).toFixed(2)}%`,
-    Correction: `${result.correctionAngle}°`,
-  });
-  document.querySelector("#model")!.innerHTML = rows({
-    Name: result.model.id,
-    Version: result.model.version,
-    Size: `${(result.model.bytes / 1024 / 1024).toFixed(2)} MB`,
-    Parameters: result.model.parameterCount.toLocaleString(),
-    Backend: result.runtime.backend,
-  });
-  document.querySelector("#timing")!.innerHTML = rows({
-    ...formatLoadTimings(loadTimings),
-    Total: `${result.timings.totalMs.toFixed(1)} ms`,
-    Decode: `${result.timings.decodeMs.toFixed(1)} ms`,
-    Preprocess: `${result.timings.preprocessMs.toFixed(1)} ms`,
-    Inference: `${result.timings.inferenceMs.toFixed(1)} ms`,
-    Postprocess: `${result.timings.postprocessMs.toFixed(1)} ms`,
-  });
-}
+
+window.addEventListener("beforeunload", () => {
+  void detector?.dispose();
+  if (originalUrl !== undefined) URL.revokeObjectURL(originalUrl);
+  if (correctedUrl !== undefined) URL.revokeObjectURL(correctedUrl);
+});
+
+renderPlaceholders();
