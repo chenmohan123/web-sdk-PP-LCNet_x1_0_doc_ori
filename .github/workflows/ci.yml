@@ -12,6 +12,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: node scripts/verify-model.mjs
       - run: node --test scripts/check-doc-parity.test.mjs scripts/verify-release.mjs
+      - run: pnpm --filter web-sdk-pp-lcnet-x1-0-doc-ori build
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
