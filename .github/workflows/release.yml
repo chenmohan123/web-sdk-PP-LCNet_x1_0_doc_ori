@@ -2,6 +2,7 @@ name: Release
 on:
   push:
     tags: ["v*.*.*"]
+  workflow_dispatch:
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -12,7 +13,7 @@ jobs:
         with: { version: 11.16.0 }
       - uses: actions/setup-node@v4
         with:
-          { node-version: 22, cache: pnpm }
+          { node-version: 24, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: node scripts/verify-model.mjs
       - run: node --test scripts/check-doc-parity.test.mjs scripts/verify-release.mjs
