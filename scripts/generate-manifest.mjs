@@ -14,7 +14,12 @@ const inspect = promisify(execFile);
 const inspectScript = resolve(root, "scripts", "inspect-onnx.py");
 let metadata;
 let inspectError;
-for (const command of process.platform === "win32" ? ["python", "py"] : ["python3", "python"]) {
+const pythonCommands = process.env.PYTHON
+  ? [process.env.PYTHON]
+  : process.platform === "win32"
+    ? ["python", "py"]
+    : ["python3", "python"];
+for (const command of pythonCommands) {
   try {
     const result = await inspect(command, [inspectScript, modelPath], { maxBuffer: 1024 * 1024 });
     metadata = JSON.parse(result.stdout);

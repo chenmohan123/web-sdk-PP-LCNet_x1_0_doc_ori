@@ -11,7 +11,7 @@
     "name": "x",
     "dtype": "float32",
     "shape": [
-      "batch",
+      "DynamicDimension.0",
       3,
       224,
       224
@@ -21,7 +21,7 @@
     "name": "fetch_name_0",
     "dtype": "float32",
     "shape": [
-      "batch",
+      "DynamicDimension.1",
       4
     ]
   },
