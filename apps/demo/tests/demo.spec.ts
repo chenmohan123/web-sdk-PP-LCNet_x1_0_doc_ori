@@ -3,7 +3,9 @@ import { test, expect } from "playwright/test";
 const pixelPng =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 
-test("demo starts in Chinese with backend, image and result controls", async ({ page }) => {
+test("demo starts in Chinese with backend, image and result controls", async ({
+  page,
+}) => {
   await page.goto("/");
   await expect(page.locator("h1")).toContainText("PP-LCNet");
   await expect(page.getByRole("button", { name: "选择图片" })).toBeVisible();
@@ -13,14 +15,18 @@ test("demo starts in Chinese with backend, image and result controls", async ({ 
   await expect(page.getByRole("heading", { name: "耗时" })).toBeVisible();
 });
 
-test("starts in Chinese and resets to Chinese after reload", async ({ page }) => {
+test("starts in Chinese and resets to Chinese after reload", async ({
+  page,
+}) => {
   await page.goto("/");
   await expect(page.getByRole("button", { name: "选择图片" })).toBeVisible();
   await page.getByRole("button", { name: "English" }).click();
-  await expect(page.getByRole("button", { name: "Choose image" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Choose image" }),
+  ).toBeVisible();
   await page.reload();
   await expect(page.getByRole("button", { name: "选择图片" })).toBeVisible();
-  await expect(page.getByText("SDK v0.1.1")).toBeVisible();
+  await expect(page.getByText("SDK v0.1.2")).toBeVisible();
 });
 
 test("uses a clean empty preview and one image action", async ({ page }) => {
@@ -29,7 +35,9 @@ test("uses a clean empty preview and one image action", async ({ page }) => {
     "href",
     "https://github.com/chenmohan123/web-sdk-PP-LCNet_x1_0_doc_ori",
   );
-  await expect(page.locator("[data-testid=sdk-version]")).toHaveText("SDK v0.1.1");
+  await expect(page.locator("[data-testid=sdk-version]")).toHaveText(
+    "SDK v0.1.2",
+  );
   await expect(page.locator("#file")).toBeHidden();
   await expect(page.getByRole("button", { name: "选择图片" })).toBeVisible();
   await expect(page.locator('img[src=""]')).toHaveCount(0);
@@ -37,7 +45,9 @@ test("uses a clean empty preview and one image action", async ({ page }) => {
   await expect(page.getByTestId("corrected-empty")).toBeVisible();
 });
 
-test("demo separates model load timings from inference timings", async ({ page }) => {
+test("demo separates model load timings from inference timings", async ({
+  page,
+}) => {
   await page.goto("/");
   await page.locator("#file").setInputFiles({
     name: "orientation.png",
@@ -55,8 +65,8 @@ test("demo separates model load timings from inference timings", async ({ page }
 
 test("keeps the layout inside the viewport", async ({ page }) => {
   await page.goto("/");
-  const overflow = await page.evaluate(() =>
-    document.documentElement.scrollWidth > window.innerWidth,
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth,
   );
   expect(overflow).toBe(false);
 });

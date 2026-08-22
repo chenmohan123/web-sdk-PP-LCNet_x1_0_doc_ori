@@ -1,6 +1,6 @@
 {
   "name": "web-sdk-pp-lcnet-x1-0-doc-ori",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Browser-first PP-LCNet document orientation SDK",
   "repository": {
     "type": "git",
@@ -8,7 +8,13 @@
   },
   "license": "Apache-2.0",
   "homepage": "https://chenmohan123.github.io/web-sdk-PP-LCNet_x1_0_doc_ori/",
-  "keywords": ["onnx", "onnxruntime-web", "document", "orientation", "paddlepaddle"],
+  "keywords": [
+    "onnx",
+    "onnxruntime-web",
+    "document",
+    "orientation",
+    "paddlepaddle"
+  ],
   "type": "module",
   "sideEffects": false,
   "files": [

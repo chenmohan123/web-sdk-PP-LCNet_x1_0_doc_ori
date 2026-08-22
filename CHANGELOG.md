@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 - 2026-08-22
+
+- Published the Chinese-first bilingual npm README with online Demo, GitHub, English, EXIF, custom model, Worker, React, CDN, Vite, and WeChat links.
+- Added the React example and integration example documentation to the published package release surface.
+- Refined the Demo layout, hidden image input, clean preview states, SDK version display, and mobile behavior.
+
 ## 0.1.1 - 2026-08-22
 
 - Bundled the official PaddlePaddle `PP-LCNet_x1_0_doc_ori` ONNX model and strict manifest.

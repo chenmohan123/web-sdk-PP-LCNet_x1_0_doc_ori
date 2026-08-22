@@ -18,7 +18,7 @@ test("release metadata is public and Apache-2.0 licensed", async () => {
     "utf8",
   );
   assert.equal(packageJson.publishConfig.access, "public");
-  assert.equal(packageJson.version, "0.1.1");
+  assert.equal(packageJson.version, "0.1.2");
   assert.equal(
     packageJson.homepage,
     "https://chenmohan123.github.io/web-sdk-PP-LCNet_x1_0_doc_ori/",
