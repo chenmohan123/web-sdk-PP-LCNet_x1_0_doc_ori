@@ -68,6 +68,6 @@ Change references to the Demo sample image strip to sample document section whil
 
 Run `pnpm --filter @pplcnet/demo typecheck`, `pnpm --filter @pplcnet/demo lint`, `pnpm --filter @pplcnet/demo test`, `pnpm verify`, and `git diff --check`.
 
-- [ ] **Step 3: Commit and push**
+- [x] **Step 3: Commit, push, and open a PR**
 
-Commit with `feat(demo): place orientation samples under previews`, then push the commit to `origin/main` after verifying the worktree and remote target.
+Commit with `feat(demo): place orientation samples under previews`, push `codex/pp-lcnet-orientation` with tracking, and open a Draft PR targeting `main` after verifying the worktree and remote target.
