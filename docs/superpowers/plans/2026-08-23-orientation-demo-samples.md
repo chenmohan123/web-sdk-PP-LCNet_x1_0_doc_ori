@@ -4,7 +4,7 @@
 
 **Goal:** Add four offline demo sample buttons that cover 0°, 90°, 180°, and 270° document orientations using one official PaddleOCR image plus clearly labeled derived rotations.
 
-**Architecture:** Store the source and derived JPEGs under `apps/demo/public/samples/`, with a typed manifest that contains expected angle, source kind, source URL, and SHA-256. Render the manifest as a bilingual sample strip; selecting a sample creates a `File` and routes through the existing file-selection path, so previews, EXIF handling, detection, and timings remain unchanged.
+**Architecture:** Store the source and derived JPEGs under `apps/demo/public/samples/`, with a typed manifest that contains expected angle, source kind, source URL, and SHA-256. Render the manifest as a bilingual sample document grid below the Original and Corrected previews inside the result panel; selecting a sample creates a `File` and routes through the existing file-selection path, so previews, EXIF handling, detection, and timings remain unchanged.
 
 **Tech Stack:** TypeScript, Vite static assets, browser `fetch`, Canvas/Blob `File` flow, Vitest/Node contract tests, Playwright.
 
@@ -70,13 +70,13 @@ Add copy fields for the sample section, official/derived labels, and expected-an
 
 - [x] **Step 2: Render sample buttons from the manifest**
 
-Add a `section` below the control band with `aria-label="Sample images"`, four buttons, thumbnail `<img>` elements, a localized name, source-kind label, and expected angle. Buttons use `data-sample-id` and remain keyboard accessible.
+Add a `section` below the preview grid with `aria-label="Sample documents"`, four buttons, thumbnail `<img>` elements, a localized name, source-kind label, and expected angle. Buttons use `data-sample-id` and remain keyboard accessible.
 
 - [x] **Step 3: Route sample selection through the existing file path**
 
 Add `loadSelectedFile(file: File): void` in `main.ts`; both the native input `change` event and sample-button click call it. Sample clicks fetch the same-origin asset, create a typed `File`, update the selected-file text and Original preview, revoke previous object URLs, clear stale results, and enable the existing detection button. Fetch failures are shown through the existing localized error status.
 
-- [x] **Step 4: Style the sample strip responsively**
+- [x] **Step 4: Style the sample document grid responsively**
 
 Use a compact four-column grid on desktop and horizontal overflow-free wrapping/stacking on mobile. Keep thumbnail dimensions stable and avoid nested cards or broken-image states.
 
@@ -95,7 +95,7 @@ Cover four visible sample buttons, selecting one enabling detection and updating
 
 - [x] **Step 2: Add documentation links and attribution**
 
-Document that the sample strip is for orientation testing, identify the official 180° source and derived variants, and link the third-party notice in both Chinese-first and English documentation.
+Document that the sample document grid is for orientation testing, identify the official 180° source and derived variants, and link the third-party notice in both Chinese-first and English documentation.
 
 - [x] **Step 3: Run focused tests**
 

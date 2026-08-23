@@ -47,9 +47,9 @@ Model and ONNX Runtime Web assets require HTTPS and CORS. WebGPU additionally re
 - [Custom models](docs/en/custom-models.md) · [Compatibility](docs/en/compatibility.md) · [Performance](docs/en/performance.md) · [Troubleshooting](docs/en/troubleshooting.md)
 - [CDN example](examples/cdn/README.md) · [Vite example](examples/vite/README.md) · [React example](examples/react/README.md) · [WeChat web-view example](examples/wechat-web-view/README.md)
 
-## Demo sample images
+## Demo sample documents
 
-The online Demo provides four orientation samples for 0°, 90°, 180°, and 270°. The 180° fixture is PaddleOCR's official `img_rot180_demo.jpg`; the other three are derived rotations of that source and are labeled as such in the Demo. Source URL, pinned commit, and SHA-256 values are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The online Demo places a four-item sample document section below the Original and Corrected previews. It provides orientation samples for 0°, 90°, 180°, and 270°. The 180° document is PaddleOCR's official `img_rot180_demo.jpg`; the other three are derived rotations of that source and are labeled as such in the Demo. Source URL, pinned commit, and SHA-256 values are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Browser-global usage:
 

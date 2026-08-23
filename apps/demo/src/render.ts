@@ -37,12 +37,6 @@ export function renderShell(copy: DemoCopy, sdkVersion: string): string {
     <p id="selected-file" class="file-meta" aria-live="polite"></p>
   </section>
 
-  <section class="samples-section" aria-labelledby="samples-heading">
-    <div class="samples-heading"><div><h2 id="samples-heading">${copy.samples}</h2><p id="samples-description">${copy.samplesDescription}</p></div></div>
-    <div class="sample-grid">${sampleButtons}</div>
-    <a id="sample-attribution" class="sample-attribution" hidden target="_blank" rel="noreferrer"></a>
-  </section>
-
   <p id="status" class="status-line" role="status">${copy.statusChoose}</p>
 
   <section class="workspace-grid">
@@ -52,6 +46,11 @@ export function renderShell(copy: DemoCopy, sdkVersion: string): string {
         <figure><figcaption id="original-label">${copy.original}</figcaption><div id="original-preview" class="preview-frame"><div data-testid="original-empty" class="empty-state">${copy.emptyOriginal}</div></div></figure>
         <figure><figcaption id="corrected-label">${copy.corrected}</figcaption><div id="corrected-preview" class="preview-frame"><div data-testid="corrected-empty" class="empty-state">${copy.emptyCorrected}</div></div></figure>
       </div>
+      <section id="samples-section" class="samples-section" aria-labelledby="samples-heading">
+        <div class="samples-heading"><div><h2 id="samples-heading">${copy.samples}</h2><p id="samples-description">${copy.samplesDescription}</p></div></div>
+        <div class="sample-grid">${sampleButtons}</div>
+        <a id="sample-attribution" class="sample-attribution" hidden target="_blank" rel="noreferrer"></a>
+      </section>
     </section>
     <aside class="details-panel">
       <section class="detail-section"><h2 id="result-heading">${copy.result}</h2><dl id="result"></dl></section>

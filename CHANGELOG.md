@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Added four offline Demo orientation samples covering 0°, 90°, 180°, and 270°, using the official PaddleOCR 180° input plus clearly labeled derived rotations.
+- Added four offline Demo orientation sample documents covering 0°, 90°, 180°, and 270°, using the official PaddleOCR 180° input plus clearly labeled derived rotations. The sample document grid now sits below the Original and Corrected previews.
 
 ## 0.1.2 - 2026-08-22
 

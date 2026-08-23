@@ -44,8 +44,8 @@ test("public API documentation covers provider and EXIF contracts", async () => 
   );
   assert.match(packageReadme, /在线 Demo/);
   assert.match(packageReadme, /## English/);
-  assert.match(readme, /示例图片/);
-  assert.match(englishReadme, /Sample images/i);
+  assert.match(readme, /示例文档/);
+  assert.match(englishReadme, /sample documents/i);
   assert.match(notices, /img_rot180_demo\.jpg/);
   assert.match(notices, /Apache License 2\.0/);
   assert.match(api, /detectBatch/);

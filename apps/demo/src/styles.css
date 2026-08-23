@@ -30,7 +30,7 @@ select { padding: 0 10px; }
 .primary-button { border-color: #d95f2b; background: #d95f2b; color: white; font-weight: 700; }
 .secondary-button { color: #27545b; font-weight: 650; }
 .primary-button:disabled { cursor: not-allowed; opacity: .45; }
-.samples-section { padding: 14px 0 12px; border-bottom: 1px solid #c9d1ce; }
+.samples-section { margin-top: 16px; padding-top: 14px; border-top: 1px solid #c9d1ce; }
 .samples-heading { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
 .samples-heading h2 { margin: 0; color: #183b42; font-size: 15px; }
 .samples-heading p { margin: 4px 0 0; color: #688078; font-size: 12px; }

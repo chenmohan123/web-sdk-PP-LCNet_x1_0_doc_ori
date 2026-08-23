@@ -12,7 +12,7 @@ Give the orientation demo representative, offline-loadable images for all four m
 
 ## Demo behavior
 
-- Add a bilingual "示例图片 / Sample images" strip below the controls.
+- Add a bilingual "示例文档 / Sample documents" strip below the Original and Corrected previews inside the result panel.
 - Show four compact image buttons with expected direction labels and degree badges.
 - Clicking a sample loads it through the same `File` path as the hidden file picker, updates the Original preview, and enables the existing detection action.
 - Keep language state in memory only; refresh still returns to Chinese.
