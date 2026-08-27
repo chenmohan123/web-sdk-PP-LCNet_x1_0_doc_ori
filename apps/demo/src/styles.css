@@ -25,6 +25,7 @@ h1 { margin: 0; color: #183b42; font-size: clamp(18px, 3vw, 30px); line-height: 
 .control-band { flex-wrap: wrap; gap: 12px; padding: 13px 0; border-bottom: 1px solid #c9d1ce; }
 .control-group { display: grid; gap: 6px; min-width: 150px; }
 .control-label { color: #688078; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.model-source-limitations { max-width: 260px; color: #688078; font-size: 11px; font-weight: 500; line-height: 1.45; overflow-wrap: anywhere; }
 select, .primary-button, .secondary-button { min-height: 36px; border: 1px solid #bbc8c3; border-radius: 6px; background: white; color: #183b42; }
 select { padding: 0 10px; }
 .primary-button { border-color: #d95f2b; background: #d95f2b; color: white; font-weight: 700; }

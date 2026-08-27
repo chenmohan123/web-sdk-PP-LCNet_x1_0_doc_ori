@@ -8,6 +8,8 @@ export interface DemoCopy {
   readonly chinese: string;
   readonly english: string;
   readonly backend: string;
+  readonly modelRepository: string;
+  readonly unavailable: string;
   readonly wasmCpu: string;
   readonly webgpuGpu: string;
   readonly chooseImage: string;
@@ -47,6 +49,7 @@ export interface DemoCopy {
   readonly inference: string;
   readonly postprocess: string;
   readonly manifest: string;
+  readonly sdkDefaultManifest: string;
   readonly modelLoad: string;
   readonly session: string;
   readonly loadTotal: string;

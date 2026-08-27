@@ -1,9 +1,17 @@
 import type { DemoCopy } from "./i18n";
+import { MODEL_SOURCE_OPTIONS } from "./model-sources";
 import { orientationSamples, sampleUrl } from "./samples";
 
 const repositoryUrl = "https://github.com/chenmohan123/web-sdk-PP-LCNet_x1_0_doc_ori";
 
 export function renderShell(copy: DemoCopy, sdkVersion: string): string {
+  const sourceOptions = MODEL_SOURCE_OPTIONS.map(
+    (option) =>
+      `<option value="${option.key}"${option.available ? "" : " disabled"} title="${option.disabledReason?.zh ?? ""}">${option.label.zh}${option.available ? "" : ` (${copy.unavailable})`}</option>`,
+  ).join("");
+  const sourceLimitations = MODEL_SOURCE_OPTIONS.filter((option) => !option.available)
+    .map((option) => `${option.label.zh}: ${option.disabledReason?.zh ?? copy.unavailable}`)
+    .join(" ");
   const sampleButtons = orientationSamples
     .map(
       (sample) => `<button class="sample-button" type="button" data-sample-id="${sample.id}" aria-label="${sample.label.zh}, ${copy.expectedOrientation}: ${sample.expectedOrientation}°">
@@ -30,6 +38,7 @@ export function renderShell(copy: DemoCopy, sdkVersion: string): string {
   </header>
 
   <section class="control-band" aria-label="Controls">
+    <div class="control-group"><label id="model-source-label" class="control-label" for="model-source">${copy.modelRepository}</label><select id="model-source" aria-describedby="model-source-limitations">${sourceOptions}</select><small id="model-source-limitations" class="model-source-limitations" data-testid="model-source-limitations">${sourceLimitations}</small></div>
     <label class="control-group" for="backend"><span id="backend-label" class="control-label">${copy.backend}</span><select id="backend"><option value="wasm">${copy.wasmCpu}</option><option value="webgpu">${copy.webgpuGpu}</option></select></label>
     <button id="choose-image" class="secondary-button" type="button">${copy.chooseImage}</button>
     <input id="file" hidden type="file" accept="image/*" />
