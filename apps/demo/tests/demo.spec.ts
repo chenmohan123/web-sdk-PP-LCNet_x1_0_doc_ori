@@ -1,4 +1,5 @@
 import { test, expect } from "playwright/test";
+import { MODEL_SOURCE_OPTIONS, selectionToModel } from "../src/model-sources";
 
 const pixelPng =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
@@ -11,16 +12,18 @@ test("模型来源默认沿用 SDK 并映射 Hugging Face manifest", async ({ pa
   await expect(page.getByRole("option", { name: "Hugging Face" })).toBeEnabled();
   await expect(page.getByRole("option", { name: /ModelScope/ })).toBeEnabled();
 
-  const contract = await page.evaluate(async (moduleUrl) => {
-    const module = (await import(moduleUrl)) as typeof import("../src/model-sources");
-    return {
-      keys: module.MODEL_SOURCE_OPTIONS.map((option) => option.key),
-      defaultModel: module.selectionToModel("default"),
-      huggingFaceModel: module.selectionToModel("huggingface"),
-      modelScopeModel: module.selectionToModel("modelscope"),
-      available: module.MODEL_SOURCE_OPTIONS.map((option) => ({ key: option.key, available: option.available, disabledReason: option.disabledReason, manifestUrl: option.manifestUrl }))
-    };
-  }, "/src/model-sources.ts");
+  const contract = {
+    keys: MODEL_SOURCE_OPTIONS.map((option) => option.key),
+    defaultModel: selectionToModel("default"),
+    huggingFaceModel: selectionToModel("huggingface"),
+    modelScopeModel: selectionToModel("modelscope"),
+    available: MODEL_SOURCE_OPTIONS.map((option) => ({
+      key: option.key,
+      available: option.available,
+      disabledReason: option.disabledReason,
+      manifestUrl: option.manifestUrl,
+    })),
+  };
 
   expect(contract.keys).toEqual(["default", "huggingface", "modelscope"]);
   expect(contract.defaultModel).toBeUndefined();
