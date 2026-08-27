@@ -6,6 +6,12 @@ import {
   type OrientationResult,
 } from "web-sdk-pp-lcnet-x1-0-doc-ori";
 import { createCopy, type DemoCopy, type Language } from "./i18n";
+import {
+  DEFAULT_MODEL_SOURCE,
+  MODEL_SOURCE_OPTIONS,
+  selectionToModel,
+  type ModelSourceKey,
+} from "./model-sources";
 import { renderShell } from "./render";
 import { fetchSampleFile, orientationSamples, type OrientationSample } from "./samples";
 import "./styles.css";
@@ -19,6 +25,10 @@ let result: OrientationResult | undefined;
 let originalUrl: string | undefined;
 let correctedUrl: string | undefined;
 let selectedSample: OrientationSample | undefined;
+let modelSource: ModelSourceKey = DEFAULT_MODEL_SOURCE;
+let activeRun: Promise<void> | undefined;
+let activeRunController: AbortController | undefined;
+let runGeneration = 0;
 let statusKey =
   "choose" as
     | "choose"
@@ -32,6 +42,7 @@ app.innerHTML = renderShell(copy, __SDK_VERSION__);
 const fileInput = document.querySelector<HTMLInputElement>("#file")!;
 const chooseButton = document.querySelector<HTMLButtonElement>("#choose-image")!;
 const backendInput = document.querySelector<HTMLSelectElement>("#backend")!;
+const modelSourceInput = document.querySelector<HTMLSelectElement>("#model-source")!;
 const runButton = document.querySelector<HTMLButtonElement>("#run")!;
 const status = document.querySelector<HTMLParagraphElement>("#status")!;
 const selectedFile = document.querySelector<HTMLParagraphElement>("#selected-file")!;
@@ -90,7 +101,10 @@ function renderResult(
     [copy.confidence]: `${(nextResult.score * 100).toFixed(2)}%`,
     [copy.correction]: `${nextResult.correctionAngle}°`,
   });
+  const activeSource = MODEL_SOURCE_OPTIONS.find((option) => option.key === modelSource)!;
   document.querySelector("#model")!.innerHTML = rows({
+    [copy.modelRepository]: activeSource.label[language === "zh-CN" ? "zh" : "en"],
+    [copy.manifest]: activeSource.manifestUrl ?? copy.sdkDefaultManifest,
     [copy.name]: nextResult.model.id,
     [copy.version]: nextResult.model.version,
     [copy.size]: `${(nextResult.model.bytes / 1024 / 1024).toFixed(2)} MB`,
@@ -117,7 +131,10 @@ function renderPlaceholders(): void {
     [copy.confidence]: "-",
     [copy.correction]: "-",
   });
+  const activeSource = MODEL_SOURCE_OPTIONS.find((option) => option.key === modelSource)!;
   document.querySelector("#model")!.innerHTML = rows({
+    [copy.modelRepository]: activeSource.label[language === "zh-CN" ? "zh" : "en"],
+    [copy.manifest]: activeSource.manifestUrl ?? copy.sdkDefaultManifest,
     [copy.name]: "-",
     [copy.version]: "-",
     [copy.size]: "-",
@@ -197,6 +214,7 @@ function applyCopy(): void {
   document.querySelector("#title")!.textContent = copy.title;
   document.querySelector("#description")!.textContent = copy.description;
   document.querySelector("#backend-label")!.textContent = copy.backend;
+  document.querySelector("#model-source-label")!.textContent = copy.modelRepository;
   document.querySelector<HTMLButtonElement>("#choose-image")!.textContent = copy.chooseImage;
   document.querySelector<HTMLButtonElement>("#run")!.textContent = copy.run;
   applySampleCopy();
@@ -212,6 +230,20 @@ function applyCopy(): void {
   const options = backendInput.options;
   options[0]!.textContent = copy.wasmCpu;
   options[1]!.textContent = copy.webgpuGpu;
+  for (const [index, option] of MODEL_SOURCE_OPTIONS.entries()) {
+    const element = modelSourceInput.options[index]!;
+    element.textContent = `${option.label[language === "zh-CN" ? "zh" : "en"]}${option.available ? "" : ` (${copy.unavailable})`}`;
+    element.title = option.disabledReason?.[language === "zh-CN" ? "zh" : "en"] ?? "";
+  }
+  const copyLanguage = language === "zh-CN" ? "zh" : "en";
+  document.querySelector("#model-source-limitations")!.textContent = MODEL_SOURCE_OPTIONS.filter(
+    (option) => !option.available,
+  )
+    .map(
+      (option) =>
+        `${option.label[copyLanguage]}: ${option.disabledReason?.[copyLanguage] ?? copy.unavailable}`,
+    )
+    .join(" ");
   renderSelectedFile();
   renderEmptyPreviews();
   if (result && detector) renderResult(result, detector.loadTimings);
@@ -264,31 +296,85 @@ backendInput.addEventListener("change", () => {
   correctedUrl = undefined;
   renderEmptyPreviews();
 });
-runButton.addEventListener("click", () => {
-  void runDetection();
+modelSourceInput.addEventListener("change", () => {
+  void changeModelSource(modelSourceInput.value as ModelSourceKey);
 });
+runButton.addEventListener("click", () => {
+  const task = runDetection();
+  activeRun = task;
+  void task.finally(() => {
+    if (activeRun === task) activeRun = undefined;
+  });
+});
+
+async function changeModelSource(next: ModelSourceKey): Promise<void> {
+  const changeGeneration = ++runGeneration;
+  activeRunController?.abort("model-source-changed");
+  activeRunController = undefined;
+  modelSourceInput.disabled = true;
+  backendInput.disabled = true;
+  runButton.disabled = true;
+  await activeRun;
+  const previousDetector = detector;
+  detector = undefined;
+  await previousDetector?.dispose();
+  if (changeGeneration !== runGeneration) return;
+  modelSource = next;
+  result = undefined;
+  renderPlaceholders();
+  if (correctedUrl !== undefined) URL.revokeObjectURL(correctedUrl);
+  correctedUrl = undefined;
+  renderEmptyPreviews();
+  setStatus(selected === undefined ? "choose" : "ready");
+  modelSourceInput.disabled = false;
+  backendInput.disabled = false;
+  runButton.disabled = selected === undefined;
+}
 
 async function runDetection(): Promise<void> {
   if (!selected) return;
+  const selectedFile = selected;
+  const sourceAtStart = modelSource;
+  const controller = new AbortController();
+  const generation = ++runGeneration;
+  activeRunController = controller;
   runButton.disabled = true;
+  modelSourceInput.disabled = true;
+  backendInput.disabled = true;
   try {
-    await detector?.dispose();
+    const previousDetector = detector;
+    detector = undefined;
+    await previousDetector?.dispose();
+    if (generation !== runGeneration || controller.signal.aborted) return;
     const backend = backendInput.value as Backend;
+    const model = selectionToModel(sourceAtStart);
     setStatus("loading");
-    detector = await createDocOrientation({
+    const nextDetector = await createDocOrientation({
       backend,
+      ...(model === undefined ? {} : { model }),
+      signal: controller.signal,
       onProgress: (event) => {
+        if (generation !== runGeneration || controller.signal.aborted) return;
         status.textContent = copy.statusStage[event.stage] ?? copy.statusLoading;
       },
     });
-    result = await detector.detect(selected);
-    renderResult(result, detector.loadTimings);
-    const corrected = await rotate(selected, result.correctionAngle);
+    if (generation !== runGeneration || controller.signal.aborted) {
+      await nextDetector.dispose();
+      return;
+    }
+    detector = nextDetector;
+    const nextResult = await nextDetector.detect(selectedFile, { signal: controller.signal });
+    if (generation !== runGeneration || controller.signal.aborted) return;
+    result = nextResult;
+    renderResult(nextResult, nextDetector.loadTimings);
+    const corrected = await rotate(selectedFile, nextResult.correctionAngle);
+    if (generation !== runGeneration || controller.signal.aborted) return;
     if (correctedUrl !== undefined) URL.revokeObjectURL(correctedUrl);
     correctedUrl = URL.createObjectURL(corrected);
     setPreview("corrected", correctedUrl);
     setStatus("complete");
   } catch (error) {
+    if (generation !== runGeneration || controller.signal.aborted) return;
     status.textContent =
       error instanceof DocOrientationError
         ? `${copy.error}: ${error.code}: ${error.message}${
@@ -300,7 +386,12 @@ async function runDetection(): Promise<void> {
           ? `${copy.error}: ${error.message}`
           : `${copy.error}: ${String(error)}`;
   } finally {
-    runButton.disabled = false;
+    if (generation === runGeneration) {
+      activeRunController = undefined;
+      modelSourceInput.disabled = false;
+      backendInput.disabled = false;
+      runButton.disabled = selected === undefined;
+    }
   }
 }
 
