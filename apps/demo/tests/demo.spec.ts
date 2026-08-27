@@ -3,6 +3,68 @@ import { test, expect } from "playwright/test";
 const pixelPng =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 
+test("模型来源默认沿用 SDK 并映射 Hugging Face manifest", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.getByLabel("模型来源", { exact: true })).toHaveValue("default");
+  await expect(page.getByLabel("模型来源").locator("option")).toHaveCount(3);
+  await expect(page.getByRole("option", { name: "Hugging Face" })).toBeEnabled();
+  await expect(page.getByRole("option", { name: /ModelScope/ })).toBeEnabled();
+
+  const contract = await page.evaluate(async (moduleUrl) => {
+    const module = (await import(moduleUrl)) as typeof import("../src/model-sources");
+    return {
+      keys: module.MODEL_SOURCE_OPTIONS.map((option) => option.key),
+      defaultModel: module.selectionToModel("default"),
+      huggingFaceModel: module.selectionToModel("huggingface"),
+      modelScopeModel: module.selectionToModel("modelscope"),
+      available: module.MODEL_SOURCE_OPTIONS.map((option) => ({ key: option.key, available: option.available, disabledReason: option.disabledReason, manifestUrl: option.manifestUrl }))
+    };
+  }, "/src/model-sources.ts");
+
+  expect(contract.keys).toEqual(["default", "huggingface", "modelscope"]);
+  expect(contract.defaultModel).toBeUndefined();
+  expect(contract.huggingFaceModel).toBe("https://huggingface.co/chenmohan/web-sdk-pp-lcnet-x1-0-doc-ori/resolve/5665496d5026b0b4f435a1c3040ef8fb7bb44402/1.0.0/manifest.json");
+  expect(contract.modelScopeModel).toBe("https://modelscope.cn/models/chenmohan/web-sdk-pp-lcnet-x1-0-doc-ori/resolve/v1.0.0/1.0.0/manifest.json");
+  expect(contract.available).toEqual([
+    { key: "default", available: true, manifestUrl: undefined },
+    { key: "huggingface", available: true, disabledReason: undefined, manifestUrl: contract.huggingFaceModel },
+    { key: "modelscope", available: true, disabledReason: undefined, manifestUrl: contract.modelScopeModel }
+  ]);
+});
+
+test("运行期间锁定来源选择且旧任务不能覆盖来源切换状态", async ({ page }) => {
+  await page.route("https://huggingface.co/chenmohan/web-sdk-pp-lcnet-x1-0-doc-ori/resolve/5665496d5026b0b4f435a1c3040ef8fb7bb44402/1.0.0/manifest.json", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    await route.fulfill({
+      body: JSON.stringify({ error: "delayed manifest" }),
+      contentType: "application/json",
+      status: 500,
+    });
+  });
+  await page.goto("/");
+  await page.getByLabel("模型来源").selectOption("huggingface");
+  await page.locator("#file").setInputFiles({
+    name: "orientation.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(pixelPng, "base64"),
+  });
+
+  await page.getByRole("button", { name: "加载模型并检测" }).click();
+  await expect(page.getByRole("status")).toContainText("正在加载模型清单");
+  await expect(page.getByLabel("模型来源")).toBeDisabled();
+
+  await page.getByLabel("模型来源").evaluate((element: HTMLSelectElement) => {
+    element.value = "default";
+    element.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(page.getByLabel("模型来源")).toBeEnabled();
+  await expect(page.getByRole("status")).toContainText("图片已准备好，可以检测");
+  await page.waitForTimeout(450);
+  await expect(page.getByRole("status")).toContainText("图片已准备好，可以检测");
+  await expect(page.locator("#result dd")).toHaveText(["-", "-", "-"]);
+});
+
 test("demo starts in Chinese with backend, image and result controls", async ({
   page,
 }) => {
