@@ -3,8 +3,8 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
-const version = process.argv[2] ?? "v1.0.0";
-const dir = resolve(root, "models", version);
+const version = process.argv[2] ?? "1.0.0";
+const dir = resolve(root, "models");
 const manifest = JSON.parse(
   await readFile(resolve(dir, "manifest.json"), "utf8"),
 );
@@ -19,5 +19,5 @@ if (
   );
 }
 console.log(
-  `verified ${version}/inference.onnx (${data.byteLength} bytes, sha256 ${digest})`,
+  `verified models/inference.onnx (${data.byteLength} bytes, sha256 ${digest})`,
 );

@@ -58,7 +58,7 @@ describe("parseModelManifest", () => {
   it("accepts the checked-in official manifest", () => {
     const manifest: unknown = JSON.parse(
       readFileSync(
-        new URL("../../../models/v1.0.0/manifest.json", import.meta.url),
+        new URL("../../../models/manifest.json", import.meta.url),
         "utf8",
       ),
     );

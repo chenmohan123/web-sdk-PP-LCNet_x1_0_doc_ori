@@ -5,9 +5,9 @@ import { resolve } from "node:path";
 import { promisify } from "node:util";
 
 const root = resolve(import.meta.dirname, "..");
-const version = process.argv[2] ?? "v1.0.0";
-const modelPath = resolve(root, "models", version, "inference.onnx");
-const manifestPath = resolve(root, "models", version, "manifest.json");
+const version = process.argv[2] ?? "1.0.0";
+const modelPath = resolve(root, "models", "inference.onnx");
+const manifestPath = resolve(root, "models", "manifest.json");
 const data = await readFile(modelPath);
 const sha256 = createHash("sha256").update(data).digest("hex");
 const inspect = promisify(execFile);
@@ -58,7 +58,7 @@ const manifest = {
     bytes: data.byteLength,
     opset: metadata.opset,
     sha256,
-    url: `https://chenmohan123.github.io/web-sdk-PP-LCNet_x1_0_doc_ori/models/${version}/inference.onnx`,
+    url: "https://chenmohan123.github.io/web-sdk-PP-LCNet_x1_0_doc_ori/models/inference.onnx",
   },
   source: {
     name: "PaddlePaddle/PP-LCNet_x1_0_doc_ori_onnx",

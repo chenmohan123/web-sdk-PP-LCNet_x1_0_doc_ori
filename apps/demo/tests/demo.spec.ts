@@ -27,8 +27,8 @@ test("模型来源默认沿用 SDK 并映射 Hugging Face manifest", async ({ pa
 
   expect(contract.keys).toEqual(["default", "huggingface", "modelscope"]);
   expect(contract.defaultModel).toBeUndefined();
-  expect(contract.huggingFaceModel).toBe("https://huggingface.co/chenmohan/web-sdk-pp-lcnet-x1-0-doc-ori/resolve/5665496d5026b0b4f435a1c3040ef8fb7bb44402/1.0.0/manifest.json");
-  expect(contract.modelScopeModel).toBe("https://modelscope.cn/models/chenmohan/web-sdk-pp-lcnet-x1-0-doc-ori/resolve/v1.0.0/1.0.0/manifest.json");
+  expect(contract.huggingFaceModel).toBe("https://huggingface.co/chenmohan/web-sdk-pp-lcnet-x1-0-doc-ori/resolve/main/manifest.json?v=1.0.0");
+  expect(contract.modelScopeModel).toBe("https://modelscope.cn/models/chenmohan/web-sdk-pp-lcnet-x1-0-doc-ori/resolve/master/manifest.json?v=1.0.0");
   expect(contract.available).toEqual([
     { key: "default", available: true, manifestUrl: undefined },
     { key: "huggingface", available: true, disabledReason: undefined, manifestUrl: contract.huggingFaceModel },
@@ -37,7 +37,7 @@ test("模型来源默认沿用 SDK 并映射 Hugging Face manifest", async ({ pa
 });
 
 test("运行期间锁定来源选择且旧任务不能覆盖来源切换状态", async ({ page }) => {
-  await page.route("https://huggingface.co/chenmohan/web-sdk-pp-lcnet-x1-0-doc-ori/resolve/5665496d5026b0b4f435a1c3040ef8fb7bb44402/1.0.0/manifest.json", async (route) => {
+  await page.route("https://huggingface.co/chenmohan/web-sdk-pp-lcnet-x1-0-doc-ori/resolve/main/manifest.json?v=1.0.0", async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 350));
     await route.fulfill({
       body: JSON.stringify({ error: "delayed manifest" }),

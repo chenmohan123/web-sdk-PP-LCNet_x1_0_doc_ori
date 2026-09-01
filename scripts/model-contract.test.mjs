@@ -7,9 +7,9 @@ const root = resolve(import.meta.dirname, "..");
 
 test("official model manifest matches the checked-in ONNX asset", async () => {
   const manifest = JSON.parse(
-    await readFile(resolve(root, "models/v1.0.0/manifest.json"), "utf8"),
+    await readFile(resolve(root, "models/manifest.json"), "utf8"),
   );
-  const modelPath = resolve(root, "models/v1.0.0/inference.onnx");
+  const modelPath = resolve(root, "models/inference.onnx");
   const modelStat = await stat(modelPath);
 
   assert.equal(manifest.model.id, "PP-LCNet_x1_0_doc_ori");
