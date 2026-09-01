@@ -31,7 +31,7 @@ import type {
 } from "./types";
 
 export const DEFAULT_REMOTE_MANIFEST_URL =
-  "https://chenmohan123.github.io/web-sdk-PP-LCNet_x1_0_doc_ori/models/v1.0.0/manifest.json";
+"https://chenmohan123.github.io/web-sdk-PP-LCNet_x1_0_doc_ori/models/manifest.json";
 
 function resolvePublishedAsset(relativePath: string): string | undefined {
   try {
@@ -57,7 +57,7 @@ function resolvePublishedAsset(relativePath: string): string | undefined {
 }
 
 export const DEFAULT_MANIFEST_URL =
-  resolvePublishedAsset("./models/v1.0.0/manifest.json") ??
+  resolvePublishedAsset("./models/manifest.json") ??
   DEFAULT_REMOTE_MANIFEST_URL;
 export const DEFAULT_WORKER_URL = resolvePublishedAsset(
   "./inference.worker.js",

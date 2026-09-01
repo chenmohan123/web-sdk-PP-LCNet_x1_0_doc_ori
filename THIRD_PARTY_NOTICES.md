@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-The checked-in `models/v1.0.0/inference.onnx` file is the official ONNX export
+The checked-in `models/inference.onnx` file is the official ONNX export
 from PaddlePaddle's `PP-LCNet_x1_0_doc_ori_onnx` repository.
 
 - Source: https://huggingface.co/PaddlePaddle/PP-LCNet_x1_0_doc_ori_onnx

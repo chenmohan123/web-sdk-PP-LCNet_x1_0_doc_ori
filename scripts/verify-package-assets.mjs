@@ -3,14 +3,13 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
-const source = resolve(root, "models", "v1.0.0", "inference.onnx");
+const source = resolve(root, "models", "inference.onnx");
 const packaged = resolve(
   root,
   "packages",
   "sdk",
   "dist",
   "models",
-  "v1.0.0",
   "inference.onnx",
 );
 const [sourceBytes, packagedBytes] = await Promise.all([

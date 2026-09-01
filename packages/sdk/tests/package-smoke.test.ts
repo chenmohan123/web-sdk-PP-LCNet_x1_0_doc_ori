@@ -9,7 +9,7 @@ import {
 describe("package entry", () => {
   it("exports the detector factory", () => {
     expect(createDocOrientation).toBeTypeOf("function");
-    expect(DEFAULT_MANIFEST_URL).toContain("models/v1.0.0/manifest.json");
+    expect(DEFAULT_MANIFEST_URL).toContain("models/manifest.json");
     expect(DEFAULT_WORKER_URL).toContain("inference.worker.js");
   });
 });
