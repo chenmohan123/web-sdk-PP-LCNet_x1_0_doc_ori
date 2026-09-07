@@ -12,7 +12,7 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "pnpm -r --if-present lint",
     "examples:verify": "node scripts/verify-vanilla-package.mjs",
-    "verify": "node scripts/verify-model.mjs && node --test scripts/check-doc-parity.test.mjs scripts/verify-release.mjs scripts/release-guard.test.mjs scripts/verify-vanilla-example.test.mjs && pnpm typecheck && pnpm test && pnpm build && node scripts/verify-package-assets.mjs"
+    "verify": "node scripts/verify-model.mjs && node --test scripts/check-doc-parity.test.mjs scripts/verify-release.mjs scripts/release-guard.test.mjs scripts/verify-vanilla-example.test.mjs && pnpm build && pnpm typecheck && pnpm test && node scripts/verify-package-assets.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
