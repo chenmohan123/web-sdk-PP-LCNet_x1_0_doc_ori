@@ -1,4 +1,4 @@
-export type ModelSourceKey = "default" | "huggingface" | "modelscope";
+export type ModelSourceKey = "modelscope" | "huggingface";
 
 export interface ModelSourceOption {
   readonly available: boolean;
@@ -8,25 +8,20 @@ export interface ModelSourceOption {
   readonly manifestUrl?: string;
 }
 
-export const DEFAULT_MODEL_SOURCE: ModelSourceKey = "default";
+export const DEFAULT_MODEL_SOURCE: ModelSourceKey = "modelscope";
 
 export const MODEL_SOURCE_OPTIONS: readonly ModelSourceOption[] = [
   {
     available: true,
-    key: "default",
-    label: { en: "SDK default", zh: "SDK 默认" }
+    key: "modelscope",
+    label: { en: "ModelScope", zh: "ModelScope" },
+    manifestUrl: "https://modelscope.cn/models/chenmohan/web-sdk-pp-lcnet-x1-0-doc-ori/resolve/master/manifest.json?v=1.0.0"
   },
   {
     available: true,
     key: "huggingface",
     label: { en: "Hugging Face", zh: "Hugging Face" },
     manifestUrl: "https://huggingface.co/chenmohan/web-sdk-pp-lcnet-x1-0-doc-ori/resolve/main/manifest.json?v=1.0.0"
-  },
-  {
-    available: true,
-    key: "modelscope",
-    label: { en: "ModelScope", zh: "ModelScope" },
-    manifestUrl: "https://modelscope.cn/models/chenmohan/web-sdk-pp-lcnet-x1-0-doc-ori/resolve/master/manifest.json?v=1.0.0"
   }
 ] as const;
 

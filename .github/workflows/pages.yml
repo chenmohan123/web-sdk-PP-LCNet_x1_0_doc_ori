@@ -2,10 +2,20 @@ name: Pages
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
-  deploy:
+  build:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    permissions: { contents: read, pages: write, id-token: write }
+    permissions: { contents: read, pages: read }
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,6 +29,18 @@ jobs:
       - run: node scripts/verify-package-assets.mjs
       - run: pnpm --filter @pplcnet/demo build
       - run: mkdir -p site/models && cp -R models/* site/models/ && cp -R apps/demo/dist/* site/
+      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with: { path: site }
-      - uses: actions/deploy-pages@v4
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions: { contents: read, pages: write, id-token: write }
+    steps:
+      - name: 部署 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
