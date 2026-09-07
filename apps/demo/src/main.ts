@@ -29,6 +29,7 @@ let modelSource: ModelSourceKey = DEFAULT_MODEL_SOURCE;
 let activeRun: Promise<void> | undefined;
 let activeRunController: AbortController | undefined;
 let runGeneration = 0;
+let inputGeneration = 0;
 let statusKey =
   "choose" as
     | "choose"
@@ -73,6 +74,13 @@ function statusText(): string {
 function setStatus(next: typeof statusKey): void {
   statusKey = next;
   status.textContent = statusText();
+  status.dataset.state = next === "complete"
+    ? "success"
+    : next === "loading" || next === "sampleLoading"
+      ? "loading"
+      : next === "ready" || next === "sampleReady"
+        ? "ready"
+        : "idle";
 }
 
 function renderEmptyPreviews(): void {
@@ -156,6 +164,12 @@ function loadSelectedFile(
   nextStatus: "ready" | "sampleReady" = "ready",
   sample?: OrientationSample,
 ): void {
+  inputGeneration += 1;
+  runGeneration += 1;
+  activeRunController?.abort("image-changed");
+  activeRunController = undefined;
+  modelSourceInput.disabled = false;
+  backendInput.disabled = false;
   selected = file;
   selectedSample = sample;
   result = undefined;
@@ -227,6 +241,9 @@ function applyCopy(): void {
   document.querySelector<HTMLAnchorElement>(".repository-link")!.textContent = copy.github;
   document.querySelector<HTMLButtonElement>("#language-zh")!.textContent = copy.chinese;
   document.querySelector<HTMLButtonElement>("#language-en")!.textContent = copy.english;
+  document.querySelector("#language-zh")!.setAttribute("aria-pressed", String(language === "zh-CN"));
+  document.querySelector("#language-en")!.setAttribute("aria-pressed", String(language === "en"));
+  document.documentElement.lang = language;
   const options = backendInput.options;
   options[0]!.textContent = copy.wasmCpu;
   options[1]!.textContent = copy.webgpuGpu;
@@ -262,11 +279,14 @@ for (const button of document.querySelectorAll<HTMLButtonElement>("[data-sample-
   button.addEventListener("click", () => {
     const sample = orientationSamples.find((candidate) => candidate.id === button.dataset.sampleId);
     if (!sample) return;
+    const generation = ++inputGeneration;
     button.disabled = true;
     setStatus("sampleLoading");
     void fetchSampleFile(sample)
-      .then((file) => loadSelectedFile(file, "sampleReady", sample))
+      .then((file) => { if (generation === inputGeneration) loadSelectedFile(file, "sampleReady", sample); })
       .catch((error: unknown) => {
+        if (generation !== inputGeneration) return;
+        status.dataset.state = "error";
         status.textContent = `${copy.error}: ${error instanceof Error ? error.message : String(error)}`;
       })
       .finally(() => {
@@ -309,17 +329,18 @@ runButton.addEventListener("click", () => {
 
 async function changeModelSource(next: ModelSourceKey): Promise<void> {
   const changeGeneration = ++runGeneration;
+  modelSource = next;
   activeRunController?.abort("model-source-changed");
   activeRunController = undefined;
   modelSourceInput.disabled = true;
   backendInput.disabled = true;
   runButton.disabled = true;
   await activeRun;
+  if (changeGeneration !== runGeneration) return;
   const previousDetector = detector;
   detector = undefined;
   await previousDetector?.dispose();
   if (changeGeneration !== runGeneration) return;
-  modelSource = next;
   result = undefined;
   renderPlaceholders();
   if (correctedUrl !== undefined) URL.revokeObjectURL(correctedUrl);
@@ -342,6 +363,8 @@ async function runDetection(): Promise<void> {
   modelSourceInput.disabled = true;
   backendInput.disabled = true;
   try {
+    await activeRun;
+    if (generation !== runGeneration || controller.signal.aborted) return;
     const previousDetector = detector;
     detector = undefined;
     await previousDetector?.dispose();
@@ -351,6 +374,11 @@ async function runDetection(): Promise<void> {
     setStatus("loading");
     const nextDetector = await createDocOrientation({
       backend,
+      ort: {
+        wasm: {
+          paths: new URL(`${import.meta.env.BASE_URL}ort/`, location.href).href,
+        },
+      },
       ...(model === undefined ? {} : { model }),
       signal: controller.signal,
       onProgress: (event) => {
@@ -375,6 +403,7 @@ async function runDetection(): Promise<void> {
     setStatus("complete");
   } catch (error) {
     if (generation !== runGeneration || controller.signal.aborted) return;
+    status.dataset.state = "error";
     status.textContent =
       error instanceof DocOrientationError
         ? `${copy.error}: ${error.code}: ${error.message}${

@@ -69,9 +69,9 @@ export async function createOrtSession(options: OrtSessionOptions): Promise<{
   dispose(): Promise<void>;
 }> {
   const ort = options.ort ?? (await defaultOrt(options.backend));
+  // WebGPU 同样依赖 WASM 引导模块，需要在创建会话前确定资源地址。
+  ort.env.wasm.wasmPaths = options.wasm?.paths ?? DEFAULT_ORT_WASM_BASE_URL;
   if (options.backend === "wasm") {
-    ort.env.wasm.wasmPaths =
-      options.wasm?.paths ?? DEFAULT_ORT_WASM_BASE_URL;
     if (options.capabilities.wasmSimd !== undefined)
       ort.env.wasm.simd = options.capabilities.wasmSimd;
     ort.env.wasm.numThreads = options.capabilities.wasmThreads

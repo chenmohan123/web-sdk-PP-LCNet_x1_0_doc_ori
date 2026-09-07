@@ -1,20 +1,20 @@
 import { test, expect } from "playwright/test";
-import { MODEL_SOURCE_OPTIONS, selectionToModel } from "../src/model-sources";
+import { DEFAULT_MODEL_SOURCE, MODEL_SOURCE_OPTIONS, selectionToModel } from "../src/model-sources";
 
 const pixelPng =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 
-test("模型来源默认沿用 SDK 并映射 Hugging Face manifest", async ({ page }) => {
+test("默认使用 ModelScope 且仅提供两个远程模型来源", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByLabel("模型来源", { exact: true })).toHaveValue("default");
-  await expect(page.getByLabel("模型来源").locator("option")).toHaveCount(3);
+  await expect(page.getByLabel("模型来源", { exact: true })).toHaveValue("modelscope");
+  await expect(page.getByLabel("模型来源").locator("option")).toHaveText(["ModelScope", "Hugging Face"]);
   await expect(page.getByRole("option", { name: "Hugging Face" })).toBeEnabled();
   await expect(page.getByRole("option", { name: /ModelScope/ })).toBeEnabled();
 
   const contract = {
     keys: MODEL_SOURCE_OPTIONS.map((option) => option.key),
-    defaultModel: selectionToModel("default"),
+    defaultModel: selectionToModel(DEFAULT_MODEL_SOURCE),
     huggingFaceModel: selectionToModel("huggingface"),
     modelScopeModel: selectionToModel("modelscope"),
     available: MODEL_SOURCE_OPTIONS.map((option) => ({
@@ -25,15 +25,16 @@ test("模型来源默认沿用 SDK 并映射 Hugging Face manifest", async ({ pa
     })),
   };
 
-  expect(contract.keys).toEqual(["default", "huggingface", "modelscope"]);
-  expect(contract.defaultModel).toBeUndefined();
+  expect(contract.keys).toEqual(["modelscope", "huggingface"]);
+  expect(contract.defaultModel).toBe(contract.modelScopeModel);
   expect(contract.huggingFaceModel).toBe("https://huggingface.co/chenmohan/web-sdk-pp-lcnet-x1-0-doc-ori/resolve/main/manifest.json?v=1.0.0");
   expect(contract.modelScopeModel).toBe("https://modelscope.cn/models/chenmohan/web-sdk-pp-lcnet-x1-0-doc-ori/resolve/master/manifest.json?v=1.0.0");
   expect(contract.available).toEqual([
-    { key: "default", available: true, manifestUrl: undefined },
-    { key: "huggingface", available: true, disabledReason: undefined, manifestUrl: contract.huggingFaceModel },
-    { key: "modelscope", available: true, disabledReason: undefined, manifestUrl: contract.modelScopeModel }
+    { key: "modelscope", available: true, disabledReason: undefined, manifestUrl: contract.modelScopeModel },
+    { key: "huggingface", available: true, disabledReason: undefined, manifestUrl: contract.huggingFaceModel }
   ]);
+  await page.getByLabel("模型来源", { exact: true }).selectOption("huggingface");
+  await expect(page.getByLabel("模型来源", { exact: true })).toHaveValue("huggingface");
 });
 
 test("运行期间锁定来源选择且旧任务不能覆盖来源切换状态", async ({ page }) => {
@@ -58,7 +59,7 @@ test("运行期间锁定来源选择且旧任务不能覆盖来源切换状态",
   await expect(page.getByLabel("模型来源")).toBeDisabled();
 
   await page.getByLabel("模型来源").evaluate((element: HTMLSelectElement) => {
-    element.value = "default";
+    element.value = "modelscope";
     element.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await expect(page.getByLabel("模型来源")).toBeEnabled();

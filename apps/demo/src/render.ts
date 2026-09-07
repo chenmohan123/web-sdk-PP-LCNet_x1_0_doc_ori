@@ -23,32 +23,33 @@ export function renderShell(copy: DemoCopy, sdkVersion: string): string {
   return `<main class="demo-shell">
   <header class="topbar">
     <div class="brand-block">
-      <p id="eyebrow" class="eyebrow">${copy.eyebrow}</p>
-      <h1 id="title">${copy.title}</h1>
-      <p id="description" class="description">${copy.description}</p>
-      <span data-testid="sdk-version" class="version">SDK v${sdkVersion}</span>
+      <span class="brand-mark" aria-hidden="true">ORI</span>
+      <div class="brand-copy">
+        <h1 id="title">${copy.title}</h1>
+        <div class="brand-meta"><span data-testid="sdk-version" class="version">SDK v${sdkVersion}</span><p id="eyebrow" class="eyebrow">${copy.eyebrow}</p></div>
+        <p id="description" class="visually-hidden">${copy.description}</p>
+      </div>
     </div>
     <nav class="top-actions" aria-label="Demo links">
       <a class="text-button repository-link" href="${repositoryUrl}" target="_blank" rel="noreferrer">${copy.github}</a>
       <div class="language-switch" role="group" aria-label="Language">
-        <button id="language-zh" class="language-button" type="button">${copy.chinese}</button>
-        <button id="language-en" class="language-button" type="button">${copy.english}</button>
+        <button id="language-zh" class="language-button" type="button" aria-pressed="true">${copy.chinese}</button>
+        <button id="language-en" class="language-button" type="button" aria-pressed="false">${copy.english}</button>
       </div>
     </nav>
   </header>
 
-  <section class="control-band" aria-label="Controls">
+  <section class="workspace-grid">
+  <aside class="control-band" aria-label="Controls">
     <div class="control-group"><label id="model-source-label" class="control-label" for="model-source">${copy.modelRepository}</label><select id="model-source" aria-describedby="model-source-limitations">${sourceOptions}</select><small id="model-source-limitations" class="model-source-limitations" data-testid="model-source-limitations">${sourceLimitations}</small></div>
     <label class="control-group" for="backend"><span id="backend-label" class="control-label">${copy.backend}</span><select id="backend"><option value="wasm">${copy.wasmCpu}</option><option value="webgpu">${copy.webgpuGpu}</option></select></label>
     <button id="choose-image" class="secondary-button" type="button">${copy.chooseImage}</button>
     <input id="file" hidden type="file" accept="image/*" />
     <button id="run" class="primary-button" type="button" disabled>${copy.run}</button>
     <p id="selected-file" class="file-meta" aria-live="polite"></p>
-  </section>
+    <p id="status" class="status-line" role="status" data-state="idle">${copy.statusChoose}</p>
+  </aside>
 
-  <p id="status" class="status-line" role="status">${copy.statusChoose}</p>
-
-  <section class="workspace-grid">
     <section class="result-panel" aria-labelledby="preview-heading">
       <div class="panel-heading"><h2 id="preview-heading">${copy.preview}</h2></div>
       <div class="images">
