@@ -9,7 +9,7 @@ describe("createOrtSession", () => {
       release: vi.fn(() => Promise.resolve()),
     }));
     const ort = {
-      env: { wasm: {} },
+      env: { wasm: {}, versions: { web: "1.27.0" } },
       Tensor: class {
         constructor() {}
         dispose() {}
@@ -17,7 +17,7 @@ describe("createOrtSession", () => {
       InferenceSession: { create },
     } as never;
 
-    await createOrtSession({
+    const session = await createOrtSession({
       backend,
       capabilities: {
         wasm: true,
@@ -32,6 +32,7 @@ describe("createOrtSession", () => {
       ort,
     });
 
+    expect(session.runtime).toMatchObject({ requestedBackend: backend, actualBackend: backend, backend, execution: "main", runtimeVersion: "1.27.0" });
     expect((ort as { env: { wasm: { wasmPaths?: string } } }).env.wasm.wasmPaths).toBe(
       "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0/dist/",
     );

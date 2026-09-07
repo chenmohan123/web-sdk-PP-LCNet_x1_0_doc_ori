@@ -92,7 +92,7 @@ test("starts in Chinese and resets to Chinese after reload", async ({
   ).toBeVisible();
   await page.reload();
   await expect(page.getByRole("button", { name: "选择图片" })).toBeVisible();
-  await expect(page.getByText("SDK v0.1.2")).toBeVisible();
+  await expect(page.getByText("SDK v0.2.0")).toBeVisible();
 });
 
 test("uses a clean empty preview and one image action", async ({ page }) => {
@@ -102,7 +102,7 @@ test("uses a clean empty preview and one image action", async ({ page }) => {
     "https://github.com/chenmohan123/web-sdk-PP-LCNet_x1_0_doc_ori",
   );
   await expect(page.locator("[data-testid=sdk-version]")).toHaveText(
-    "SDK v0.1.2",
+    "SDK v0.2.0",
   );
   await expect(page.locator("#file")).toBeHidden();
   await expect(page.getByRole("button", { name: "选择图片" })).toBeVisible();

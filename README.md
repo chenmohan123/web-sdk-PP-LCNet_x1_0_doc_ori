@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-npm install web-sdk-pp-lcnet-x1-0-doc-ori
+npm install web-sdk-pp-lcnet-x1-0-doc-ori@0.2.0
 ```
 
 ## 快速开始
@@ -59,7 +59,7 @@ const gpuDetector = await createDocOrientation({ backend: "webgpu" });
 浏览器全局构建：
 
 ```html
-<script src="https://unpkg.com/web-sdk-pp-lcnet-x1-0-doc-ori/dist/browser-global.global.js"></script>
+<script src="https://unpkg.com/web-sdk-pp-lcnet-x1-0-doc-ori@0.2.0/dist/browser-global.global.js"></script>
 <script>
   const detector = await PPDocOrientation.createDocOrientation({ backend: "wasm" });
 </script>

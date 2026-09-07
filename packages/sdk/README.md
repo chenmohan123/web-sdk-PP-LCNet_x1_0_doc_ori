@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-npm install web-sdk-pp-lcnet-x1-0-doc-ori
+npm install web-sdk-pp-lcnet-x1-0-doc-ori@0.2.0
 ```
 
 ## 使用
@@ -42,7 +42,7 @@ Blob/File JPEG 输入会将 EXIF Orientation 1-8 只归一化一次；Canvas 和
 Browser SDK for PaddlePaddle `PP-LCNet_x1_0_doc_ori`, powered by ONNX Runtime Web. Images are processed locally in the browser.
 
 ```bash
-npm install web-sdk-pp-lcnet-x1-0-doc-ori
+npm install web-sdk-pp-lcnet-x1-0-doc-ori@0.2.0
 ```
 
 Use `backend: "wasm"` for CPU/WASM or explicitly choose `backend: "webgpu"` for GPU inference. The SDK never silently changes the selected provider. Use `detectBatch()` for ordered batch results. JPEG Blob/File inputs normalize EXIF Orientation 1-8 exactly once; Canvas and ImageBitmap inputs are treated as already decoded and oriented.

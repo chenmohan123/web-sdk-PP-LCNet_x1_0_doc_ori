@@ -56,4 +56,19 @@ export interface DemoCopy {
   readonly source: string;
   readonly loadSource: string;
   readonly error: string;
+  readonly cacheUsage: string;
+  readonly clearCurrent: string;
+  readonly clearAll: string;
+  readonly cacheCleared: string;
+  readonly cacheBusy: string;
+  readonly privacy: string;
+  readonly cacheRead: string;
+  readonly integrity: string;
+  readonly runtime: string;
+  readonly requestedBackend: string;
+  readonly actualBackend: string;
+  readonly execution: string;
+  readonly runtimeVersion: string;
+  readonly environment: string;
+  readonly coldRun: string;
 }

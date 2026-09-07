@@ -8,6 +8,7 @@ export {
 export * from "./errors";
 export * from "./types";
 export { parseModelManifest } from "./model/manifest";
+export { clearCurrentModelCache, clearAllModelCache, estimateModelCache } from "./model/model-manager";
 export { decodeImage } from "./image/decode";
 export { readExifOrientation } from "./image/exif";
 export { rotate } from "./image/rotate";

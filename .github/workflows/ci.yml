@@ -12,13 +12,9 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: node scripts/verify-model.mjs
-      - run: node --test scripts/check-doc-parity.test.mjs scripts/verify-release.mjs
-      - run: pnpm --filter web-sdk-pp-lcnet-x1-0-doc-ori build
+      - run: pnpm verify
       - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm build
-      - run: node scripts/verify-package-assets.mjs
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm --filter @pplcnet/demo test
+      - run: pnpm exec playwright test -c apps/demo/playwright.production.config.ts
+      - run: pnpm examples:verify
