@@ -1,5 +1,5 @@
 import { DocOrientationError } from "../errors";
-import type { Backend, Capabilities, ModelManifest } from "../types";
+import type { Backend, Capabilities, DocOrientationRuntimeInfo, ModelManifest } from "../types";
 
 export const DEFAULT_ORT_WASM_BASE_URL =
   "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0/dist/";
@@ -18,6 +18,7 @@ export interface OrtSessionLike {
 }
 export interface OrtModuleLike {
   readonly env: {
+    readonly versions?: { readonly web?: string };
     readonly wasm: {
       numThreads?: number;
       simd?: boolean;
@@ -60,6 +61,7 @@ async function defaultOrt(backend: Backend): Promise<OrtModuleLike> {
 
 export async function createOrtSession(options: OrtSessionOptions): Promise<{
   readonly backend: Backend;
+  readonly runtime: DocOrientationRuntimeInfo;
   readonly sessionCreateMs: number;
   run(
     data: Float32Array,
@@ -103,6 +105,16 @@ export async function createOrtSession(options: OrtSessionOptions): Promise<{
   let disposed = false;
   return {
     backend: options.backend,
+    // 仅配置一个执行提供程序；创建失败即抛错，不允许 SDK 静默换后端。
+    runtime: {
+      backend: options.backend,
+      requestedBackend: options.backend,
+      actualBackend: options.backend,
+      executionProvider: options.backend,
+      execution: "main",
+      runtimeVersion: ort.env.versions?.web ?? "unknown",
+      ...(options.backend === "wasm" ? { threads: ort.env.wasm.numThreads ?? 1 } : {}),
+    },
     sessionCreateMs: Math.max(
       0,
       (typeof performance === "object" ? performance.now() : Date.now()) -

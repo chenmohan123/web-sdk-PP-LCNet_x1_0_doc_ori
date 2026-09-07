@@ -1,4 +1,4 @@
-import type { Backend, ModelManifest } from "../types";
+import type { Backend, DocOrientationRuntimeInfo, ModelManifest, CreateDocOrientationOptions } from "../types";
 import type { OrtRunResult } from "../runtime/ort-session";
 export type WorkerMessage =
   | {
@@ -7,6 +7,7 @@ export type WorkerMessage =
       readonly model: ArrayBuffer;
       readonly manifest: ModelManifest;
       readonly backend: Backend;
+      readonly wasm?: NonNullable<CreateDocOrientationOptions["ort"]>["wasm"];
     }
   | {
       readonly type: "run";
@@ -26,6 +27,7 @@ export type WorkerResponse =
       readonly type: "ready";
       readonly requestId: number;
       readonly sessionCreateMs: number;
+      readonly runtime: DocOrientationRuntimeInfo;
     }
   | {
       readonly type: "result";

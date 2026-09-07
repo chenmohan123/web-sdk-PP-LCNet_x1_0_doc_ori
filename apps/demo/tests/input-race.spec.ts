@@ -14,19 +14,22 @@ test("换图不会撤销正在等待旧任务的模型来源切换", async ({ pa
     new URL("../../../models/inference.onnx", import.meta.url),
   );
   const requestedSources: string[] = [];
-  await page.route("**/manifest.json*", async (route) => {
-    const url = new URL(route.request().url());
-    requestedSources.push(url.hostname);
-    await route.fulfill({
-      json: {
-        ...manifest,
-        variant: {
-          ...manifest.variant,
-          url: new URL("inference.onnx", url).href,
+  await page.route(
+    /^https:\/\/(?:modelscope\.cn|huggingface\.co)\/.*\/manifest\.json/,
+    async (route) => {
+      const url = new URL(route.request().url());
+      requestedSources.push(url.hostname);
+      await route.fulfill({
+        json: {
+          ...manifest,
+          variant: {
+            ...manifest.variant,
+            url: new URL("inference.onnx", url).href,
+          },
         },
-      },
-    });
-  });
+      });
+    },
+  );
   await page.route("**/inference.onnx", (route) =>
     route.fulfill({
       body: modelBytes,
@@ -68,7 +71,12 @@ test("换图不会撤销正在等待旧任务的模型来源切换", async ({ pa
     await expect(page.getByRole("status")).toContainText("检测完成", {
       timeout: 30_000,
     });
-    expect(requestedSources).toEqual(["modelscope.cn", "huggingface.co"]);
+    // 缓存身份解析和推理各自读取清单，来源切换顺序仍不得倒退。
+    expect(
+      requestedSources.filter(
+        (source, index) => source !== requestedSources[index - 1],
+      ),
+    ).toEqual(["modelscope.cn", "huggingface.co"]);
     await expect(page.locator("#selected-file")).toContainText("last.png");
     await expect(page.locator("#model")).toContainText("Hugging Face");
   } finally {

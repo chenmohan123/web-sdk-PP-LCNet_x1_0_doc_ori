@@ -7,7 +7,7 @@ Browser-first document orientation SDK for PaddlePaddle's official `PP-LCNet_x1_
 ## Install
 
 ```bash
-npm install web-sdk-pp-lcnet-x1-0-doc-ori
+npm install web-sdk-pp-lcnet-x1-0-doc-ori@0.2.0
 ```
 
 ## Quick start
@@ -54,7 +54,7 @@ The online Demo places a four-item sample document section below the Original an
 Browser-global usage:
 
 ```html
-<script src="https://unpkg.com/web-sdk-pp-lcnet-x1-0-doc-ori/dist/browser-global.global.js"></script>
+<script src="https://unpkg.com/web-sdk-pp-lcnet-x1-0-doc-ori@0.2.0/dist/browser-global.global.js"></script>
 <script>
   const detector = await PPDocOrientation.createDocOrientation({ backend: "wasm" });
 </script>

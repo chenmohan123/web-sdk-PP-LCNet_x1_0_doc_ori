@@ -25,6 +25,7 @@ import type {
   DocOrientationRuntimeInfo,
   LoadTimings,
   ModelCacheEntry,
+  ModelCacheScope,
   ModelManifest,
   OrientationBatchResult,
   OrientationResult,
@@ -283,6 +284,15 @@ class Detector implements DocOrientationDetector {
   clearModelCache() {
     return this.manager.clearCache();
   }
+  clearCurrentModelCache() {
+    return this.manager.clearCache({ modelId: this.model.id, version: this.model.version });
+  }
+  clearAllModelCache() {
+    return this.manager.clearCache();
+  }
+  estimateModelCache(scope?: ModelCacheScope) {
+    return this.manager.estimateCache(scope);
+  }
   listModelCache(): Promise<readonly ModelCacheEntry[]> {
     return this.manager.listCache();
   }
@@ -345,6 +355,7 @@ export async function createDocOrientation(
       model: loaded.data.slice(0),
       manifest,
       backend,
+      ...(options.ort?.wasm === undefined ? {} : { wasm: options.ort.wasm }),
     });
     if (worker === undefined)
       throw new DocOrientationError(
@@ -361,26 +372,23 @@ export async function createDocOrientation(
       ...(options.ort?.wasm === undefined ? {} : { wasm: options.ort.wasm }),
     });
   }
+  if (options.signal?.aborted) {
+    await session.dispose();
+    throw new DocOrientationError("ABORTED", "模型会话加载已取消", { reason: options.signal.reason });
+  }
   const model: DocOrientationModelInfo = {
     ...manifest.model,
     variant: variant.id,
     bytes: variant.bytes,
     sha256: variant.sha256,
   };
-  const runtime: DocOrientationRuntimeInfo = {
-    backend,
-    executionProvider: backend === "wasm" ? "wasm" : "webgpu",
-    ...(backend === "wasm"
-      ? {
-          threads: capabilities.wasmThreads
-            ? (options.ort?.wasm?.numThreads ?? 2)
-            : 1,
-        }
-      : {}),
-  };
+  const runtime = session.runtime;
   const loadTimings: LoadTimings = {
     manifestMs,
     downloadMs: loaded.downloadMs,
+    modelDownloadMs: loaded.modelDownloadMs,
+    modelCacheReadMs: loaded.modelCacheReadMs,
+    integrityMs: loaded.integrityMs,
     sessionMs: session.sessionCreateMs,
     totalMs: now() - started,
     source: loaded.source,

@@ -1,25 +1,36 @@
-# Changelog
+# 更新日志
 
-## Unreleased
+## 0.2.0 - 2026-09-07
 
-- Added four offline Demo orientation sample documents covering 0°, 90°, 180°, and 270°, using the official PaddleOCR 180° input plus clearly labeled derived rotations. The sample document grid now sits below the Original and Corrected previews.
+- 当前缓存清理仅使对应模型的旧下载失效，保留其他模型的并发缓存写入。Demo 按所选来源的清单解析缓存身份，并以实际加载的会话模型更新版本。
+- 新增可独立安装运行的 Vanilla TypeScript/Vite 示例，使用公开 SDK，包含取消、错误显示和资源释放；CI 在临时目录安装当前版本 tarball，验证真实推理与失败恢复。
+- 使用带格式版本的结构化模型缓存键，修复自定义模型 ID/版本/变体含斜杠时的身份碰撞；旧键经完整身份验证后仍可复用。
+
+- 补齐模型下载、缓存读取与完整性校验的独立耗时，保留旧 `downloadMs` 语义。
+- 主线程与 Worker 从创建成功的会话报告请求后端、实际后端、执行模式和运行时版本，保留旧 `backend` 字段。
+- 新增当前模型/全部 SDK 模型缓存清理及容量估计，覆盖共享内存降级，并防止清理前的下载重新回填缓存。
+- Demo 展示缓存容量、两种清理操作、独立耗时与运行信息；加载或清理期间禁用冲突操作，补充双语 API 和性能说明。
+
+- 新增 0°、90°、180°、270° 四个离线 Demo 示例文档，使用 PaddleOCR 官方 180° 输入及明确标注的派生旋转，示例位于原图与校正图下方。
+- 发布仅接受与包版本、manifest 和更新日志一致且提交已进入 `origin/main` 的版本标签；使用 GitHub OIDC 可信发布并生成 npm provenance。
+- 保留旧调用入口、`backend` 与 `downloadMs`；模型版本仍为 `1.0.0`，没有新增 WebGPU/NPU 兼容性承诺。完整来源、资产及边界见 [发布说明](docs/releases/0.2.0.md)。
 
 ## 0.1.2 - 2026-08-22
 
-- Published the Chinese-first bilingual npm README with online Demo, GitHub, English, EXIF, custom model, Worker, React, CDN, Vite, and WeChat links.
-- Added the React example and integration example documentation to the published package release surface.
-- Refined the Demo layout, hidden image input, clean preview states, SDK version display, and mobile behavior.
+- 发布中文优先的双语 npm README，补充在线 Demo、GitHub、英文、EXIF、自定义模型、Worker、React、CDN、Vite 和微信入口。
+- 将 React 示例及集成说明纳入发布文档。
+- 优化 Demo 布局、隐藏图片输入、空预览状态、SDK 版本显示和移动端行为。
 
 ## 0.1.1 - 2026-08-22
 
-- Bundled the official PaddlePaddle `PP-LCNet_x1_0_doc_ori` ONNX model and strict manifest.
-- Added explicit WASM/CPU and WebGPU/GPU execution providers with no silent fallback.
-- Added EXIF Orientation 1-8 normalization for JPEG Blob/File inputs and the `rotate()` utility.
-- Added model metadata, cache source, load timings, and inference phase timings to results.
-- Refreshed the Demo with Chinese-first bilingual controls, SDK version, GitHub link, single image button, and clean Original/Corrected empty states.
-- Added React, CDN, Vite, and WeChat H5/web-view examples and bilingual API documentation.
-- Documented Apache-2.0 model attribution, HTTPS/CORS requirements, custom manifests, Worker usage, and native WeChat mini-program limitations.
+- 内置 PaddlePaddle 官方 `PP-LCNet_x1_0_doc_ori` ONNX 模型与严格清单。
+- 显式选择 WASM/CPU 和 WebGPU/GPU 执行提供程序，不静默降级。
+- 支持 JPEG Blob/File 的 EXIF Orientation 1–8 归一化及 `rotate()` 工具。
+- 结果包含模型元数据、缓存来源、加载耗时与推理阶段耗时。
+- 更新中文优先的双语 Demo，展示 SDK 版本、GitHub 入口、单一选图按钮及清晰空状态。
+- 增加 React、CDN、Vite、微信 H5/web-view 示例与双语 API 文档。
+- 记录 Apache-2.0 模型署名、HTTPS/CORS、自定义清单、Worker 使用和原生微信小程序限制。
 
 ## 0.1.0
 
-- Initial browser SDK for PP-LCNet document orientation classification.
+- 首次发布用于 PP-LCNet 文档朝向分类的浏览器 SDK。

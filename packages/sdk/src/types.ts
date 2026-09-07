@@ -72,6 +72,10 @@ export interface DocOrientationModelInfo {
 
 export interface DocOrientationRuntimeInfo {
   readonly backend: Backend;
+  readonly requestedBackend: Backend;
+  readonly actualBackend: Backend;
+  readonly execution: "main" | "worker";
+  readonly runtimeVersion: string;
   readonly executionProvider: string;
   readonly threads?: number;
 }
@@ -79,13 +83,16 @@ export interface DocOrientationRuntimeInfo {
 export interface LoadTimings {
   readonly manifestMs: number;
   readonly downloadMs: number;
+  readonly modelDownloadMs: number;
+  readonly modelCacheReadMs: number;
+  readonly integrityMs: number;
   readonly sessionMs: number;
   readonly totalMs: number;
   readonly source: "network" | "cache" | "memory" | "custom";
 }
 
 export interface ProgressEvent {
-  readonly stage: "manifest" | "download" | "session" | "inference";
+  readonly stage: "manifest" | "download" | "cache" | "integrity" | "session" | "inference";
   readonly loaded?: number;
   readonly total?: number;
 }
@@ -166,6 +173,17 @@ export interface ModelCacheEntry {
   readonly bytes: number;
 }
 
+export interface ModelCacheScope {
+  readonly modelId: string;
+  readonly version: string;
+}
+
+export interface ModelCacheEstimate {
+  readonly bytes: number;
+  readonly entries: number;
+  readonly scope: ModelCacheScope | "all";
+}
+
 export interface DocOrientationDetector {
   readonly capabilities: Capabilities;
   readonly model: DocOrientationModelInfo;
@@ -180,6 +198,9 @@ export interface DocOrientationDetector {
     options?: DetectOptions,
   ): Promise<OrientationBatchResult>;
   clearModelCache(): Promise<void>;
+  clearCurrentModelCache(): Promise<void>;
+  clearAllModelCache(): Promise<void>;
+  estimateModelCache(scope?: ModelCacheScope): Promise<ModelCacheEstimate>;
   listModelCache(): Promise<readonly ModelCacheEntry[]>;
   dispose(): Promise<void>;
 }

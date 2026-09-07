@@ -2,24 +2,40 @@ name: Release
 on:
   push:
     tags: ["v*.*.*"]
-  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   publish:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions: { contents: read, id-token: write }
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
       - uses: pnpm/action-setup@v4
         with: { version: 11.16.0 }
       - uses: actions/setup-node@v4
         with:
-          { node-version: 24, cache: pnpm }
+          { node-version: 24, cache: pnpm, registry-url: "https://registry.npmjs.org" }
+      - name: 校验标签、版本与 main 归属
+        run: |
+          git fetch origin main:refs/remotes/origin/main
+          node scripts/release-guard.mjs
+      - name: 安装支持可信发布的固定 npm 版本
+        run: npm install --global npm@11.6.2
       - run: pnpm install --frozen-lockfile
-      - run: node scripts/verify-model.mjs
-      - run: node --test scripts/check-doc-parity.test.mjs scripts/verify-release.mjs
-      - run: pnpm --filter web-sdk-pp-lcnet-x1-0-doc-ori build
+      - run: pnpm verify
       - run: pnpm lint
-      - run: pnpm typecheck && pnpm test && pnpm build
-      - run: node scripts/verify-package-assets.mjs
-      - run: npm publish --provenance --access public --no-git-checks
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm examples:verify
+      - name: 通过 GitHub OIDC 发布并生成来源证明
+        run: npm publish --provenance --access public
         working-directory: packages/sdk

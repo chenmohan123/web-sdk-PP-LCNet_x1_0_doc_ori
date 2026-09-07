@@ -1,7 +1,8 @@
-import type { Backend, ModelManifest, NormalizedRaster } from "../types";
+import type { Backend, DocOrientationRuntimeInfo, ModelManifest, NormalizedRaster, CreateDocOrientationOptions } from "../types";
 import type { OrtRunResult } from "../runtime/ort-session";
 export interface InferenceExecutor {
   readonly mode: "main" | "worker";
+  readonly runtime: DocOrientationRuntimeInfo;
   readonly sessionCreateMs: number;
   run(
     data: Float32Array,
@@ -22,6 +23,7 @@ export async function createWorkerExecutor(options: {
   readonly model: ArrayBuffer;
   readonly manifest: ModelManifest;
   readonly backend: Backend;
+  readonly wasm?: NonNullable<CreateDocOrientationOptions["ort"]>["wasm"];
 }): Promise<InferenceExecutor | undefined> {
   if (!options.worker || options.createWorker === undefined) return undefined;
   const worker = options.createWorker();
@@ -41,12 +43,19 @@ export async function createWorkerExecutor(options: {
         type: string;
         requestId?: number;
         sessionCreateMs?: number;
+        runtime?: DocOrientationRuntimeInfo;
         result?: OrtRunResult;
         message?: string;
       };
       if (message.type === "ready" && message.requestId === readyRequestId) {
+        if (message.runtime === undefined) {
+          worker.terminate();
+          reject(new Error("Worker 未返回会话运行信息，请使用同版本 Worker"));
+          return;
+        }
         resolve({
           mode: "worker",
+          runtime: message.runtime,
           sessionCreateMs: message.sessionCreateMs ?? 0,
           run(data, dims, signal) {
             if (signal?.aborted)
@@ -95,8 +104,12 @@ export async function createWorkerExecutor(options: {
           else request.resolve(message.result);
         }
       } else if (message.type === "error") {
-        worker.terminate();
         const error = new Error(message.message ?? "Worker failed");
+        if (message.requestId === readyRequestId) {
+          worker.terminate();
+          reject(error);
+          return;
+        }
         if (message.requestId !== undefined) {
           const request = pending.get(message.requestId);
           if (request !== undefined) {
@@ -106,7 +119,7 @@ export async function createWorkerExecutor(options: {
             return;
           }
         }
-        reject(error);
+        // 已取消请求的延迟响应不得终止仍在运行的新请求。
       }
     };
     worker.onerror = (event) => {
@@ -129,6 +142,7 @@ export async function createWorkerExecutor(options: {
         model: options.model,
         manifest: options.manifest,
         backend: options.backend,
+        ...(options.wasm === undefined ? {} : { wasm: options.wasm }),
       },
       [options.model],
     );

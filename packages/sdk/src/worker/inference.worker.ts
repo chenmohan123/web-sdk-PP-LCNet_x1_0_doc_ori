@@ -1,6 +1,6 @@
 import { createOrtSession } from "../runtime/ort-session";
 import { probeCapabilities } from "../runtime/capabilities";
-import type { ModelManifest, Backend } from "../types";
+import type { ModelManifest, Backend, CreateDocOrientationOptions } from "../types";
 
 const scope = globalThis as unknown as {
   onmessage: ((event: MessageEvent) => void) | null;
@@ -26,11 +26,13 @@ async function handleMessage(message: Record<string, unknown>): Promise<void> {
         capabilities,
         manifest: message.manifest as ModelManifest,
         modelBytes: message.model as ArrayBuffer,
+        ...(message.wasm === undefined ? {} : { wasm: message.wasm as NonNullable<NonNullable<CreateDocOrientationOptions["ort"]>["wasm"]> }),
       });
       scope.postMessage({
         type: "ready",
         requestId,
         sessionCreateMs: session.sessionCreateMs,
+        runtime: { ...session.runtime, execution: "worker" },
       });
       return;
     }

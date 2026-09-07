@@ -1,8 +1,13 @@
 import {
   createDocOrientation,
+  clearCurrentModelCache,
+  clearAllModelCache,
+  estimateModelCache,
+  parseModelManifest,
   DocOrientationError,
   rotate,
   type Backend,
+  type ModelCacheScope,
   type OrientationResult,
 } from "web-sdk-pp-lcnet-x1-0-doc-ori";
 import { createCopy, type DemoCopy, type Language } from "./i18n";
@@ -13,7 +18,11 @@ import {
   type ModelSourceKey,
 } from "./model-sources";
 import { renderShell } from "./render";
-import { fetchSampleFile, orientationSamples, type OrientationSample } from "./samples";
+import {
+  fetchSampleFile,
+  orientationSamples,
+  type OrientationSample,
+} from "./samples";
 import "./styles.css";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
@@ -30,23 +39,134 @@ let activeRun: Promise<void> | undefined;
 let activeRunController: AbortController | undefined;
 let runGeneration = 0;
 let inputGeneration = 0;
-let statusKey =
-  "choose" as
-    | "choose"
-    | "ready"
-    | "loading"
-    | "complete"
-    | "sampleLoading"
-    | "sampleReady";
+let cacheBusy = false;
+let cacheGeneration = 0;
+let cacheBytes: number | undefined;
+let cacheMessage: "cleared" | "busy" | undefined;
+let cacheError: string | undefined;
+let currentCacheScope: ModelCacheScope | undefined;
+let cacheScopeController: AbortController | undefined;
+let statusKey = "choose" as
+  "choose" | "ready" | "loading" | "complete" | "sampleLoading" | "sampleReady";
 
 app.innerHTML = renderShell(copy, __SDK_VERSION__);
 const fileInput = document.querySelector<HTMLInputElement>("#file")!;
-const chooseButton = document.querySelector<HTMLButtonElement>("#choose-image")!;
+const chooseButton =
+  document.querySelector<HTMLButtonElement>("#choose-image")!;
 const backendInput = document.querySelector<HTMLSelectElement>("#backend")!;
-const modelSourceInput = document.querySelector<HTMLSelectElement>("#model-source")!;
+const modelSourceInput =
+  document.querySelector<HTMLSelectElement>("#model-source")!;
 const runButton = document.querySelector<HTMLButtonElement>("#run")!;
 const status = document.querySelector<HTMLParagraphElement>("#status")!;
-const selectedFile = document.querySelector<HTMLParagraphElement>("#selected-file")!;
+const selectedFile =
+  document.querySelector<HTMLParagraphElement>("#selected-file")!;
+const clearCurrentButton = document.querySelector<HTMLButtonElement>(
+  "#clear-current-cache",
+)!;
+const clearAllButton =
+  document.querySelector<HTMLButtonElement>("#clear-all-cache")!;
+
+function renderCache(): void {
+  const busy =
+    cacheBusy || activeRun !== undefined || activeRunController !== undefined;
+  clearCurrentButton.disabled = busy || currentCacheScope === undefined;
+  clearAllButton.disabled = busy;
+  clearCurrentButton.textContent = copy.clearCurrent;
+  clearAllButton.textContent = copy.clearAll;
+  document.querySelector("#cache-usage")!.textContent =
+    `${copy.cacheUsage}: ${cacheBytes === undefined ? "-" : `${cacheBytes.toLocaleString()} B`}`;
+  const cacheStatus = document.querySelector<HTMLElement>("#cache-status")!;
+  cacheStatus.dataset.state = cacheError
+    ? "error"
+    : cacheBusy
+      ? "loading"
+      : "ready";
+  cacheStatus.textContent = cacheError
+    ? `${copy.error}: ${cacheError}`
+    : cacheMessage === "cleared"
+      ? copy.cacheCleared
+      : cacheMessage === "busy"
+        ? copy.cacheBusy
+        : "";
+  cacheStatus.hidden = cacheStatus.textContent.length === 0;
+}
+
+async function refreshCache(): Promise<void> {
+  const generation = ++cacheGeneration;
+  if (currentCacheScope === undefined) {
+    cacheBytes = undefined;
+    renderCache();
+    return;
+  }
+  try {
+    const estimate = await estimateModelCache(currentCacheScope);
+    if (generation !== cacheGeneration) return;
+    cacheBytes = estimate.bytes;
+  } catch (error) {
+    if (generation !== cacheGeneration) return;
+    cacheError = error instanceof Error ? error.message : String(error);
+  }
+  renderCache();
+}
+
+async function resolveCacheScope(): Promise<void> {
+  cacheScopeController?.abort();
+  const controller = new AbortController();
+  cacheScopeController = controller;
+  currentCacheScope = undefined;
+  cacheBytes = undefined;
+  cacheError = undefined;
+  cacheGeneration += 1;
+  renderCache();
+  try {
+    const url = selectionToModel(modelSource);
+    if (url === undefined) throw new Error("模型来源缺少清单地址");
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok)
+      throw new Error(`MODEL_DOWNLOAD_FAILED: HTTP ${response.status}`);
+    const manifest = parseModelManifest(await response.json());
+    if (controller.signal.aborted || cacheScopeController !== controller)
+      return;
+    currentCacheScope = {
+      modelId: manifest.model.id,
+      version: manifest.model.version,
+    };
+    await refreshCache();
+  } catch (error) {
+    if (controller.signal.aborted || cacheScopeController !== controller)
+      return;
+    cacheError = error instanceof Error ? error.message : String(error);
+    renderCache();
+  } finally {
+    if (cacheScopeController === controller) cacheScopeController = undefined;
+  }
+}
+
+async function clearCache(all: boolean): Promise<void> {
+  if (cacheBusy || activeRun !== undefined || activeRunController !== undefined)
+    return;
+  const scope = currentCacheScope;
+  if (!all && scope === undefined) return;
+  cacheBusy = true;
+  cacheError = undefined;
+  cacheMessage = "busy";
+  runButton.disabled = true;
+  modelSourceInput.disabled = true;
+  renderCache();
+  try {
+    if (all) await clearAllModelCache();
+    else await clearCurrentModelCache(scope!);
+    cacheMessage = "cleared";
+    await refreshCache();
+  } catch (error) {
+    cacheError = error instanceof Error ? error.message : String(error);
+  } finally {
+    cacheBusy = false;
+    modelSourceInput.disabled = false;
+    runButton.disabled = selected === undefined;
+    renderCache();
+  }
+}
 
 function rows(values: Record<string, string>): string {
   return Object.entries(values)
@@ -74,13 +194,14 @@ function statusText(): string {
 function setStatus(next: typeof statusKey): void {
   statusKey = next;
   status.textContent = statusText();
-  status.dataset.state = next === "complete"
-    ? "success"
-    : next === "loading" || next === "sampleLoading"
-      ? "loading"
-      : next === "ready" || next === "sampleReady"
-        ? "ready"
-        : "idle";
+  status.dataset.state =
+    next === "complete"
+      ? "success"
+      : next === "loading" || next === "sampleLoading"
+        ? "loading"
+        : next === "ready" || next === "sampleReady"
+          ? "ready"
+          : "idle";
 }
 
 function renderEmptyPreviews(): void {
@@ -109,9 +230,12 @@ function renderResult(
     [copy.confidence]: `${(nextResult.score * 100).toFixed(2)}%`,
     [copy.correction]: `${nextResult.correctionAngle}°`,
   });
-  const activeSource = MODEL_SOURCE_OPTIONS.find((option) => option.key === modelSource)!;
+  const activeSource = MODEL_SOURCE_OPTIONS.find(
+    (option) => option.key === modelSource,
+  )!;
   document.querySelector("#model")!.innerHTML = rows({
-    [copy.modelRepository]: activeSource.label[language === "zh-CN" ? "zh" : "en"],
+    [copy.modelRepository]:
+      activeSource.label[language === "zh-CN" ? "zh" : "en"],
     [copy.manifest]: activeSource.manifestUrl ?? copy.sdkDefaultManifest,
     [copy.name]: nextResult.model.id,
     [copy.version]: nextResult.model.version,
@@ -121,7 +245,9 @@ function renderResult(
   });
   document.querySelector("#timing")!.innerHTML = rows({
     [copy.manifest]: `${loadTimings.manifestMs.toFixed(1)} ms`,
-    [copy.modelLoad]: `${loadTimings.downloadMs.toFixed(1)} ms`,
+    [copy.modelLoad]: `${loadTimings.modelDownloadMs.toFixed(1)} ms`,
+    [copy.cacheRead]: `${loadTimings.modelCacheReadMs.toFixed(1)} ms`,
+    [copy.integrity]: `${loadTimings.integrityMs.toFixed(1)} ms`,
     [copy.session]: `${loadTimings.sessionMs.toFixed(1)} ms`,
     [copy.loadTotal]: `${loadTimings.totalMs.toFixed(1)} ms`,
     [copy.source]: loadTimings.source,
@@ -131,6 +257,13 @@ function renderResult(
     [copy.inference]: `${nextResult.timings.inferenceMs.toFixed(1)} ms`,
     [copy.postprocess]: `${nextResult.timings.postprocessMs.toFixed(1)} ms`,
   });
+  document.querySelector("#runtime")!.innerHTML = rows({
+    [copy.requestedBackend]: nextResult.runtime.requestedBackend,
+    [copy.actualBackend]: nextResult.runtime.actualBackend,
+    [copy.execution]: nextResult.runtime.execution,
+    [copy.runtimeVersion]: nextResult.runtime.runtimeVersion,
+    [copy.environment]: `${navigator.userAgent} · ${new Date().toISOString().slice(0, 10)}`,
+  });
 }
 
 function renderPlaceholders(): void {
@@ -139,9 +272,12 @@ function renderPlaceholders(): void {
     [copy.confidence]: "-",
     [copy.correction]: "-",
   });
-  const activeSource = MODEL_SOURCE_OPTIONS.find((option) => option.key === modelSource)!;
+  const activeSource = MODEL_SOURCE_OPTIONS.find(
+    (option) => option.key === modelSource,
+  )!;
   document.querySelector("#model")!.innerHTML = rows({
-    [copy.modelRepository]: activeSource.label[language === "zh-CN" ? "zh" : "en"],
+    [copy.modelRepository]:
+      activeSource.label[language === "zh-CN" ? "zh" : "en"],
     [copy.manifest]: activeSource.manifestUrl ?? copy.sdkDefaultManifest,
     [copy.name]: "-",
     [copy.version]: "-",
@@ -150,6 +286,12 @@ function renderPlaceholders(): void {
     [copy.backend]: "-",
   });
   document.querySelector("#timing")!.innerHTML = "";
+  document.querySelector("#runtime")!.innerHTML = rows({
+    [copy.requestedBackend]: backendInput.value,
+    [copy.actualBackend]: "-",
+    [copy.execution]: "-",
+    [copy.runtimeVersion]: "-",
+  });
 }
 
 function revokePreviewUrls(): void {
@@ -189,9 +331,14 @@ function loadSelectedFile(
   applySampleCopy();
 }
 
-function sampleText(sample: OrientationSample): { name: string; kind: string; aria: string } {
+function sampleText(sample: OrientationSample): {
+  name: string;
+  kind: string;
+  aria: string;
+} {
   const name = language === "zh-CN" ? sample.label.zh : sample.label.en;
-  const kind = sample.kind === "official" ? copy.officialSample : copy.derivedSample;
+  const kind =
+    sample.kind === "official" ? copy.officialSample : copy.derivedSample;
   return {
     name,
     kind,
@@ -201,17 +348,23 @@ function sampleText(sample: OrientationSample): { name: string; kind: string; ar
 
 function applySampleCopy(): void {
   document.querySelector("#samples-heading")!.textContent = copy.samples;
-  document.querySelector("#samples-description")!.textContent = copy.samplesDescription;
+  document.querySelector("#samples-description")!.textContent =
+    copy.samplesDescription;
   for (const sample of orientationSamples) {
-    const button = document.querySelector<HTMLButtonElement>(`[data-sample-id="${sample.id}"]`);
+    const button = document.querySelector<HTMLButtonElement>(
+      `[data-sample-id="${sample.id}"]`,
+    );
     if (!button) continue;
     const text = sampleText(sample);
     button.setAttribute("aria-label", text.aria);
     button.querySelector(".sample-name")!.textContent = text.name;
     button.querySelector(".sample-kind")!.textContent = text.kind;
-    button.querySelector(".sample-angle")!.textContent = `${copy.expectedOrientation}: ${sample.expectedOrientation}°`;
+    button.querySelector(".sample-angle")!.textContent =
+      `${copy.expectedOrientation}: ${sample.expectedOrientation}°`;
   }
-  const attribution = document.querySelector<HTMLAnchorElement>("#sample-attribution")!;
+  const attribution = document.querySelector<HTMLAnchorElement>(
+    "#sample-attribution",
+  )!;
   if (selectedSample) {
     attribution.hidden = false;
     attribution.href = selectedSample.sourceUrl;
@@ -224,12 +377,18 @@ function applySampleCopy(): void {
 }
 
 function applyCopy(): void {
+  document.querySelector("#runtime-heading")!.textContent = copy.runtime;
+  document.querySelector("#privacy")!.textContent = copy.privacy;
+  document.querySelector("#timing-note")!.textContent = copy.coldRun;
+  renderCache();
   document.querySelector("#eyebrow")!.textContent = copy.eyebrow;
   document.querySelector("#title")!.textContent = copy.title;
   document.querySelector("#description")!.textContent = copy.description;
   document.querySelector("#backend-label")!.textContent = copy.backend;
-  document.querySelector("#model-source-label")!.textContent = copy.modelRepository;
-  document.querySelector<HTMLButtonElement>("#choose-image")!.textContent = copy.chooseImage;
+  document.querySelector("#model-source-label")!.textContent =
+    copy.modelRepository;
+  document.querySelector<HTMLButtonElement>("#choose-image")!.textContent =
+    copy.chooseImage;
   document.querySelector<HTMLButtonElement>("#run")!.textContent = copy.run;
   applySampleCopy();
   document.querySelector("#preview-heading")!.textContent = copy.preview;
@@ -238,11 +397,18 @@ function applyCopy(): void {
   document.querySelector("#result-heading")!.textContent = copy.result;
   document.querySelector("#model-heading")!.textContent = copy.model;
   document.querySelector("#timing-heading")!.textContent = copy.timing;
-  document.querySelector<HTMLAnchorElement>(".repository-link")!.textContent = copy.github;
-  document.querySelector<HTMLButtonElement>("#language-zh")!.textContent = copy.chinese;
-  document.querySelector<HTMLButtonElement>("#language-en")!.textContent = copy.english;
-  document.querySelector("#language-zh")!.setAttribute("aria-pressed", String(language === "zh-CN"));
-  document.querySelector("#language-en")!.setAttribute("aria-pressed", String(language === "en"));
+  document.querySelector<HTMLAnchorElement>(".repository-link")!.textContent =
+    copy.github;
+  document.querySelector<HTMLButtonElement>("#language-zh")!.textContent =
+    copy.chinese;
+  document.querySelector<HTMLButtonElement>("#language-en")!.textContent =
+    copy.english;
+  document
+    .querySelector("#language-zh")!
+    .setAttribute("aria-pressed", String(language === "zh-CN"));
+  document
+    .querySelector("#language-en")!
+    .setAttribute("aria-pressed", String(language === "en"));
   document.documentElement.lang = language;
   const options = backendInput.options;
   options[0]!.textContent = copy.wasmCpu;
@@ -250,17 +416,17 @@ function applyCopy(): void {
   for (const [index, option] of MODEL_SOURCE_OPTIONS.entries()) {
     const element = modelSourceInput.options[index]!;
     element.textContent = `${option.label[language === "zh-CN" ? "zh" : "en"]}${option.available ? "" : ` (${copy.unavailable})`}`;
-    element.title = option.disabledReason?.[language === "zh-CN" ? "zh" : "en"] ?? "";
+    element.title =
+      option.disabledReason?.[language === "zh-CN" ? "zh" : "en"] ?? "";
   }
   const copyLanguage = language === "zh-CN" ? "zh" : "en";
-  document.querySelector("#model-source-limitations")!.textContent = MODEL_SOURCE_OPTIONS.filter(
-    (option) => !option.available,
-  )
-    .map(
-      (option) =>
-        `${option.label[copyLanguage]}: ${option.disabledReason?.[copyLanguage] ?? copy.unavailable}`,
-    )
-    .join(" ");
+  document.querySelector("#model-source-limitations")!.textContent =
+    MODEL_SOURCE_OPTIONS.filter((option) => !option.available)
+      .map(
+        (option) =>
+          `${option.label[copyLanguage]}: ${option.disabledReason?.[copyLanguage] ?? copy.unavailable}`,
+      )
+      .join(" ");
   renderSelectedFile();
   renderEmptyPreviews();
   if (result && detector) renderResult(result, detector.loadTimings);
@@ -275,15 +441,22 @@ function setPreview(kind: "original" | "corrected", url: string): void {
 }
 
 chooseButton.addEventListener("click", () => fileInput.click());
-for (const button of document.querySelectorAll<HTMLButtonElement>("[data-sample-id]")) {
+for (const button of document.querySelectorAll<HTMLButtonElement>(
+  "[data-sample-id]",
+)) {
   button.addEventListener("click", () => {
-    const sample = orientationSamples.find((candidate) => candidate.id === button.dataset.sampleId);
+    const sample = orientationSamples.find(
+      (candidate) => candidate.id === button.dataset.sampleId,
+    );
     if (!sample) return;
     const generation = ++inputGeneration;
     button.disabled = true;
     setStatus("sampleLoading");
     void fetchSampleFile(sample)
-      .then((file) => { if (generation === inputGeneration) loadSelectedFile(file, "sampleReady", sample); })
+      .then((file) => {
+        if (generation === inputGeneration)
+          loadSelectedFile(file, "sampleReady", sample);
+      })
       .catch((error: unknown) => {
         if (generation !== inputGeneration) return;
         status.dataset.state = "error";
@@ -294,16 +467,20 @@ for (const button of document.querySelectorAll<HTMLButtonElement>("[data-sample-
       });
   });
 }
-document.querySelector<HTMLButtonElement>("#language-zh")!.addEventListener("click", () => {
-  language = "zh-CN";
-  copy = createCopy(language);
-  applyCopy();
-});
-document.querySelector<HTMLButtonElement>("#language-en")!.addEventListener("click", () => {
-  language = "en";
-  copy = createCopy(language);
-  applyCopy();
-});
+document
+  .querySelector<HTMLButtonElement>("#language-zh")!
+  .addEventListener("click", () => {
+    language = "zh-CN";
+    copy = createCopy(language);
+    applyCopy();
+  });
+document
+  .querySelector<HTMLButtonElement>("#language-en")!
+  .addEventListener("click", () => {
+    language = "en";
+    copy = createCopy(language);
+    applyCopy();
+  });
 fileInput.addEventListener("change", () => {
   loadSelectedFile(fileInput.files?.[0]);
 });
@@ -322,14 +499,23 @@ modelSourceInput.addEventListener("change", () => {
 runButton.addEventListener("click", () => {
   const task = runDetection();
   activeRun = task;
+  renderCache();
   void task.finally(() => {
     if (activeRun === task) activeRun = undefined;
+    void refreshCache();
   });
 });
 
 async function changeModelSource(next: ModelSourceKey): Promise<void> {
   const changeGeneration = ++runGeneration;
   modelSource = next;
+  cacheScopeController?.abort();
+  currentCacheScope = undefined;
+  cacheBytes = undefined;
+  cacheError = undefined;
+  cacheMessage = undefined;
+  cacheGeneration += 1;
+  renderCache();
   activeRunController?.abort("model-source-changed");
   activeRunController = undefined;
   modelSourceInput.disabled = true;
@@ -350,15 +536,20 @@ async function changeModelSource(next: ModelSourceKey): Promise<void> {
   modelSourceInput.disabled = false;
   backendInput.disabled = false;
   runButton.disabled = selected === undefined;
+  void resolveCacheScope();
 }
 
 async function runDetection(): Promise<void> {
-  if (!selected) return;
+  if (!selected || cacheBusy) return;
   const selectedFile = selected;
   const sourceAtStart = modelSource;
   const controller = new AbortController();
+  cacheScopeController?.abort();
+  cacheScopeController = undefined;
+  cacheGeneration += 1;
   const generation = ++runGeneration;
   activeRunController = controller;
+  renderCache();
   runButton.disabled = true;
   modelSourceInput.disabled = true;
   backendInput.disabled = true;
@@ -383,7 +574,14 @@ async function runDetection(): Promise<void> {
       signal: controller.signal,
       onProgress: (event) => {
         if (generation !== runGeneration || controller.signal.aborted) return;
-        status.textContent = copy.statusStage[event.stage] ?? copy.statusLoading;
+        status.dataset.state =
+          event.stage === "download"
+            ? "downloading"
+            : event.stage === "inference"
+              ? "running"
+              : "loading";
+        status.textContent =
+          copy.statusStage[event.stage] ?? copy.statusLoading;
       },
     });
     if (generation !== runGeneration || controller.signal.aborted) {
@@ -391,7 +589,16 @@ async function runDetection(): Promise<void> {
       return;
     }
     detector = nextDetector;
-    const nextResult = await nextDetector.detect(selectedFile, { signal: controller.signal });
+    currentCacheScope = {
+      modelId: nextDetector.model.id,
+      version: nextDetector.model.version,
+    };
+    cacheBytes = undefined;
+    cacheError = undefined;
+    cacheMessage = undefined;
+    const nextResult = await nextDetector.detect(selectedFile, {
+      signal: controller.signal,
+    });
     if (generation !== runGeneration || controller.signal.aborted) return;
     result = nextResult;
     renderResult(nextResult, nextDetector.loadTimings);
@@ -425,8 +632,16 @@ async function runDetection(): Promise<void> {
 }
 
 window.addEventListener("beforeunload", () => {
+  cacheScopeController?.abort();
   void detector?.dispose();
   revokePreviewUrls();
 });
 
 renderPlaceholders();
+clearCurrentButton.addEventListener("click", () => {
+  void clearCache(false);
+});
+clearAllButton.addEventListener("click", () => {
+  void clearCache(true);
+});
+void resolveCacheScope();

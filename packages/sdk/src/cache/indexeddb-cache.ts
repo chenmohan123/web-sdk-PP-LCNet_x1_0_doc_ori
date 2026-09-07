@@ -8,16 +8,20 @@ interface RecordValue {
   entry: ModelCacheEntry;
 }
 
+class PersistentCacheUnavailableError extends Error {}
+
 export class IndexedDbCache implements CacheStorage {
   private readonly database: Promise<IDBDatabase>;
   constructor(name = "pp-lcnet-doc-orientation") {
-    this.database = new Promise((resolve, reject) => {
+    this.database = new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open(name, 1);
       request.onupgradeneeded = () =>
         request.result.createObjectStore("models", { keyPath: "key" });
       request.onsuccess = () => resolve(request.result);
       request.onerror = () =>
         reject(request.error ?? new Error("IndexedDB open failed"));
+    }).catch((error: unknown) => {
+      throw new PersistentCacheUnavailableError("持久化缓存不可用", { cause: error });
     });
   }
   async get(key: string) {
@@ -60,10 +64,11 @@ export class IndexedDbCache implements CacheStorage {
     return this.database.then(
       (database) =>
         new Promise((resolve, reject) => {
-          const request = action(
-            database.transaction("models", mode).objectStore("models"),
-          );
-          request.onsuccess = () => resolve(request.result as T);
+          const transaction = database.transaction("models", mode);
+          const request = action(transaction.objectStore("models"));
+          // 请求成功还未代表写事务提交；事务中止不能报告为清理成功。
+          transaction.oncomplete = () => resolve(request.result as T);
+          transaction.onabort = () => reject(transaction.error ?? new Error("缓存事务已中止"));
           request.onerror = () =>
             reject(request.error ?? new Error("IndexedDB request failed"));
         }),
@@ -71,12 +76,15 @@ export class IndexedDbCache implements CacheStorage {
   }
 }
 
+let defaultCache: CacheStorage | undefined;
+
 export function createDefaultCache(): CacheStorage {
-  if (typeof indexedDB === "undefined") return new MemoryCache();
+  if (defaultCache !== undefined) return defaultCache;
+  if (typeof indexedDB === "undefined") return defaultCache = new MemoryCache();
   try {
-    return new ResilientCache(new IndexedDbCache());
+    return defaultCache = new ResilientCache(new IndexedDbCache());
   } catch {
-    return new MemoryCache();
+    return defaultCache = new MemoryCache();
   }
 }
 
@@ -112,8 +120,8 @@ class ResilientCache implements CacheStorage {
     await this.memory.delete(key);
     try {
       await this.persistent.delete(key);
-    } catch {
-      // Persistent storage may already be unavailable.
+    } catch (error) {
+      if (!(error instanceof PersistentCacheUnavailableError)) throw error;
     }
   }
 
@@ -121,8 +129,8 @@ class ResilientCache implements CacheStorage {
     await this.memory.clear();
     try {
       await this.persistent.clear();
-    } catch {
-      // Persistent storage may already be unavailable.
+    } catch (error) {
+      if (!(error instanceof PersistentCacheUnavailableError)) throw error;
     }
   }
 
@@ -132,8 +140,8 @@ class ResilientCache implements CacheStorage {
     try {
       for (const entry of await this.persistent.list())
         entries.set(entry.key, entry);
-    } catch {
-      // Return the memory entries when persistent storage is unavailable.
+    } catch (error) {
+      if (!(error instanceof PersistentCacheUnavailableError)) throw error;
     }
     return [...entries.values()];
   }

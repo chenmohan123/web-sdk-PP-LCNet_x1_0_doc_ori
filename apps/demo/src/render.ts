@@ -48,6 +48,11 @@ export function renderShell(copy: DemoCopy, sdkVersion: string): string {
     <button id="run" class="primary-button" type="button" disabled>${copy.run}</button>
     <p id="selected-file" class="file-meta" aria-live="polite"></p>
     <p id="status" class="status-line" role="status" data-state="idle">${copy.statusChoose}</p>
+    <p id="cache-usage" class="file-meta" data-sdk-cache-usage>${copy.cacheUsage}: …</p>
+    <button id="clear-current-cache" class="secondary-button" type="button" data-sdk-cache-clear="current">${copy.clearCurrent}</button>
+    <button id="clear-all-cache" class="secondary-button" type="button" data-sdk-cache-clear="all">${copy.clearAll}</button>
+    <p id="cache-status" class="status-line" aria-live="polite"></p>
+    <p id="privacy" class="file-meta">${copy.privacy}</p>
   </aside>
 
     <section class="result-panel" aria-labelledby="preview-heading">
@@ -64,8 +69,9 @@ export function renderShell(copy: DemoCopy, sdkVersion: string): string {
     </section>
     <aside class="details-panel">
       <section class="detail-section"><h2 id="result-heading">${copy.result}</h2><dl id="result"></dl></section>
-      <section class="detail-section"><h2 id="model-heading">${copy.model}</h2><dl id="model"></dl></section>
-      <section class="detail-section"><h2 id="timing-heading">${copy.timing}</h2><dl id="timing"></dl></section>
+      <section class="detail-section" data-sdk-model-info><h2 id="model-heading">${copy.model}</h2><dl id="model"></dl></section>
+      <section class="detail-section" data-sdk-runtime-info><h2 id="runtime-heading">${copy.runtime}</h2><dl id="runtime"></dl></section>
+      <section class="detail-section" data-sdk-timing><h2 id="timing-heading">${copy.timing}</h2><dl id="timing"></dl><p id="timing-note" class="file-meta">${copy.coldRun}</p></section>
     </aside>
   </section>
 </main>`;
